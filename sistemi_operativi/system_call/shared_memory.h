@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 // the Request structure defines a request sent by a client
-struct Request {
+struct request {
     char pathname[250];
     key_t shmKey;
 };
