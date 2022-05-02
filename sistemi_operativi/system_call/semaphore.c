@@ -11,5 +11,4 @@ void semop_usr (int semid, unsigned short sem_num, short sem_op){
 
     if(semop(semid, &sop, 1) == -1)
         ErrExit("semop failed!\n");
-
 }
