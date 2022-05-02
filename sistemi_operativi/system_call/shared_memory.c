@@ -22,12 +22,16 @@ void *get_shared_memory(int shmid, int shmflg) {
     // attach the shared memory
     int *ptr_to_shmem = (int *)shmat(shmid, NULL, shmflg);
 
+    if(ptr_to_shmem == (void *)-1)
+        errExit("Could not attach shared memory");
+
     return ptr_to_shmem;
 }
 
 void free_shared_memory(void *ptr_sh) {
     // detach the shared memory segments
-    shmdt(ptr_sh);
+    if(shmdt(ptr_sh) == -1)
+        errExit("Could not detach shared memory");
 }
 
 void remove_shared_memory(int shmid) {
