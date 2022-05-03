@@ -13,7 +13,7 @@ void semop_usr (int semid, unsigned short sem_num, short sem_op) {
         .sem_num = sem_num,
         .sem_op = sem_op,
         .sem_flg = 0
-        };
+    };
 
     // open a semaphore
     if(semop(semid, &sop, 1) == -1)
