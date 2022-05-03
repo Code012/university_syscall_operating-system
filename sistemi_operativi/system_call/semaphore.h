@@ -10,11 +10,12 @@
 
 // definition of the union semun
 union semun {
-int val;
-struct semid_ds * buf;
-unsigned short * array;
+    int val;
+    struct semid_ds * buf;
+    unsigned short * array;
 };
 
+// Definition of a semaphore operation whitout using a buffer
 void semop_usr (int semid, unsigned short sem_num, short sem_op);
 
 #endif
