@@ -4,7 +4,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 #include "err_exit.h"
 #include "fifo.h"
 
@@ -36,6 +36,8 @@ void read_fifo (int fd, void *buf, size_t bytes_to_read) {
     // !!!
 }
 
+// da verificare e togliere commento della libreria bool
+// void write_fifo (int fd, void *buf, size_t bytes_to_read, bool is_server) {
 void write_fifo (int fd, void *buf, size_t bytes_to_read) {
     ssize_t charRead = write(fd, buf, bytes_to_read); 
 
