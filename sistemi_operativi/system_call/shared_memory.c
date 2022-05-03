@@ -17,7 +17,7 @@ int alloc_shared_memory(key_t shmKey, size_t size) {
     return shmid;
 }
 
-void *get_shared_memory(int shmid, int shmflg) {
+void *attach_shared_memory(int shmid, int shmflg) {
     // attach the shared memory
     int *ptr_to_shmem = (int *)shmat(shmid, NULL, shmflg);
 
