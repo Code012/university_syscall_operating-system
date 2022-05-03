@@ -10,7 +10,7 @@
 struct queue_msg {
     long mtype;
     pid_t pid;
-    char pathname[250];     // assuming pathnames shorter than 250 Bytes
+    char pathname[150];     // assuming pathnames shorter than 150 Bytes
     char fragment[1001];    // one more char to compensate for string terminator
 };
 
