@@ -4,6 +4,8 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>      // 
 #include "err_exit.h"
 #include "fifo.h"
 
@@ -13,8 +15,13 @@ void create_fifo (const char *pathname) {
 }
 
 int open_fifo (const char *pathname, int flags) {
-    if (open(pathname, flags) == -1)
+    // file descriptor
+    int fd = open(pathname, flags);
+
+    if (fd == -1)
         errExit("open_fifo failed!");
+
+    return fd;
 }
 
 ssize_t read_fifo (int fd, void *buf, size_t bytes_to_read) {
