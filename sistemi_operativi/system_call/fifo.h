@@ -14,7 +14,7 @@ int open_fifo(const char *pathname, int flags); // !!! Si può ottimizzare dato 
 
 // Read from fifo or
 // terminate process if there is an error
-void read_fifo (int fd, void *buf, size_t bytes_to_read);
+ssize_t read_fifo (int fd, void *buf, size_t bytes_to_read);
 
 // Write on fifo or
 // terminate process if there is an error

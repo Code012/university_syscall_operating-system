@@ -17,7 +17,7 @@ int open_fifo (const char *pathname, int flags) {
         errExit("open_fifo failed!");
 }
 
-void read_fifo (int fd, void *buf, size_t bytes_to_read) {
+ssize_t read_fifo (int fd, void *buf, size_t bytes_to_read) {
     ssize_t char_read = read(fd, buf, bytes_to_read);
 
     if (char_read == -1)
@@ -26,15 +26,17 @@ void read_fifo (int fd, void *buf, size_t bytes_to_read) {
     // check if read was succesfull
     if (char_read != bytes_to_read)
         errExit("broken fifo while reading error!");
+
+    return char_read;
 }
 
-void write_fifo (int fd, void *buf, size_t bytes_to_read) {
-    ssize_t char_write = write(fd, buf, bytes_to_read); 
+void write_fifo (int fd, void *buf, size_t bytes_to_write) {
+    ssize_t char_write = write(fd, buf, bytes_to_write); 
 
     if (char_write == -1)
         errExit("write_fifo failed!");
 
     // check if write was succesfull
-    if (char_write != bytes_to_read)
+    if (char_write != bytes_to_write)
         errExit("broken fifo while writing error!");
 }
