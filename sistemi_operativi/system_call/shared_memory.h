@@ -4,9 +4,6 @@
 
 #pragma once
 
-#ifndef _SHARED_MEMORY_HH
-#define _SHARED_MEMORY_HH
-
 #include <stdlib.h>
 
 // The alloc_shared_memory creates, if it does not exist, a shared
@@ -14,8 +11,8 @@
 // It returns the shmid on success, otherwise it terminates the calling process
 int alloc_shared_memory(key_t shmKey, size_t size);
 
-// The attach_shared_memory attaches a shared memory segment in the logic address space
-// of the calling process.
+// The attach_shared_memory attaches a shared memory segment in the logic
+// address space of the calling process.
 // It returns a pointer to the attached shared memory segment,
 // otherwise it terminates the calling process
 void *attach_shared_memory(int shmid, int shmflg);
@@ -28,5 +25,3 @@ void free_shared_memory(void *ptr_sh);
 // The remove_shared_memory removes a shared memory segment
 // If it does not succeed, it terminates the calling process
 void remove_shared_memory(int shmid);
-
-#endif

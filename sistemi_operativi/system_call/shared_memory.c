@@ -12,7 +12,7 @@ int alloc_shared_memory(key_t shmKey, size_t size) {
     int shmid = shmget(shmKey, size, IPC_CREAT | S_IRUSR | S_IWUSR);
 
     if(shmid == -1)
-        errExit("Could not allocate shared memory");
+        errExit("could not allocate shared memory");
 
     return shmid;
 }
@@ -22,7 +22,7 @@ void *attach_shared_memory(int shmid, int shmflg) {
     int *ptr_to_shmem = (int *)shmat(shmid, NULL, shmflg);
 
     if(ptr_to_shmem == (void *)-1)
-        errExit("Could not attach shared memory");
+        errExit("could not attach shared memory");
 
     return ptr_to_shmem;
 }
@@ -30,7 +30,7 @@ void *attach_shared_memory(int shmid, int shmflg) {
 void free_shared_memory(void *ptr_sh) {
     // detach the shared memory segments
     if(shmdt(ptr_sh) == -1)
-        errExit("Could not detach shared memory");
+        errExit("could not detach shared memory");
 }
 
 void remove_shared_memory(int shmid) {
