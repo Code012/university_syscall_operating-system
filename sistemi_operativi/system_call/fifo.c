@@ -4,54 +4,37 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-//#include <stdbool.h>
 #include "err_exit.h"
 #include "fifo.h"
 
 void create_fifo (const char *pathname) {
     if (mkfifo(pathname, S_IRUSR | S_IWUSR) == -1)
-        errExit("mkfifo failed!\n");
+        errExit("mkfifo failed!");
 }
 
 int open_fifo (const char *pathname, int flags) {
     if (open(pathname, flags) == -1)
-        errExit("open_fifo failed!\n");
+        errExit("open_fifo failed!");
 }
 
 void read_fifo (int fd, void *buf, size_t bytes_to_read) {
-    ssize_t charRead = read(fd, buf, bytes_to_read);
+    ssize_t char_read = read(fd, buf, bytes_to_read);
 
-    if (charRead == -1)
-        errExit("read_fifo failed!\n");
-    // Da verificare! Maxy boy
-    if (charRead != bytes_to_read)
-        errExit("fifo read error");
+    if (char_read == -1)
+        errExit("read_fifo failed!");
 
-    // !!!
-    // Dobbiamo verificare che il numero di caratteri letti
-    // sia uguale a al numero di caratteri che abbiamo richiesto di leggere?
-    // Se sì, nel caso in cui il numero dei caratteri letti sia minore di quello richiesto
-    // bisogna anche controllare la lunghezza del file
-    // P.S. non si ritorna niente perché buf è un puntatore!
-    // !!!
+    // check if read was succesfull
+    if (char_read != bytes_to_read)
+        errExit("broken fifo while reading error!");
 }
 
-// da verificare e togliere commento della libreria bool
-// void write_fifo (int fd, void *buf, size_t bytes_to_read, bool is_server) {
 void write_fifo (int fd, void *buf, size_t bytes_to_read) {
-    ssize_t charRead = write(fd, buf, bytes_to_read); 
+    ssize_t char_write = write(fd, buf, bytes_to_read); 
 
-    if (charRead == -1)
-        errExit("write_fifo failed!\n");
-    // Da verificare! Maxy boy
-    if (charRead != bytes_to_read)
-        errExit("fifo write error");
+    if (char_write == -1)
+        errExit("write_fifo failed!");
 
-    // !!!
-    // Dobbiamo verificare che il numero di caratteri letti
-    // sia uguale a al numero di caratteri che abbiamo richiesto di leggere?
-    // Se sì, nel caso in cui il numero dei caratteri letti sia minore di quello richiesto
-    // bisogna anche controllare la lunghezza del file
-    // P.S. non si ritorna niente perché buf è un puntatore!
-    // !!!
+    // check if write was succesfull
+    if (char_write != bytes_to_read)
+        errExit("broken fifo while writing error!");
 }

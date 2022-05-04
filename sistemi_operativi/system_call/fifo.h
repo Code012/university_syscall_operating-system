@@ -18,5 +18,4 @@ void read_fifo (int fd, void *buf, size_t bytes_to_read);
 
 // Write on fifo or
 // terminate process if there is an error
-// void write_fifo (int fd, void *buf, size_t bytes_to_read, bool is_server) {
 void write_fifo (int fd, void *buf, size_t bytes_to_read);
