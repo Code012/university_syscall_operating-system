@@ -8,5 +8,8 @@
 #include "fifo.h"
 
 int main(int argc, char * argv[]) {
+
+    // CONTROLLO DEGLI ARGOMENTI ARGV!!!
+
     return 0;
 }
