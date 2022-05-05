@@ -18,6 +18,7 @@ sigset_t new_set_signals;
 
 // manipulation of a signal & mod signal mask
 void sigHandler(int sig);
+int search_dir (char *buf, char *file_path, char *to_send[], int count);
 void set_original_mask();
 void create_signal_mask();
 
@@ -44,19 +45,10 @@ int main(int argc, char * argv[]) {
     
     /* resume execution after SIGINT */
 
-    // add at the set of block signals: SIGINT && SIGUSR1
-    if (sigaddset(&new_set_signals, SIGINT) == -1 &&
-            sigaddset(&new_set_signals, SIGUSR1) == -1)
-        errExit("Error while adding signals to mask");
-
-    /*
-    !!! Nell'operazione precedente viene risparmiata una creazione (bit-mask) !!!
-    // block all signals
+    // Blocking all blockable signals
     sigfillset(&new_set_signals);
     if(sigprocmask(SIG_SETMASK, &new_set_signals, NULL) == -1)
         errExit("sigprocmask(original_set) failed");
-    */
-
 
     /****************
      * FILE READING *
@@ -67,8 +59,10 @@ int main(int argc, char * argv[]) {
         errExit("Error while changing directory");
 
     // alloc 150 character
-    char *buf = malloc(sizeof(char) * 150); 
-    /// TODO: Da eseguire controllo sulla malloc
+    char *buf = malloc(sizeof(char) * 150);
+    check_malloc(buf);
+    
+    // get current wotking directory
     getcwd(buf, 150);
 
     printf("Ciao %s, ora inizio l’invio dei file contenuti in %s\n\n", getenv("USER"), buf);
@@ -76,38 +70,12 @@ int main(int argc, char * argv[]) {
     // Counters and memory
     int count = 0;
     //char to_send[100][150];
-    char *to_send = malloc(sizeof(char) * 100 * 150);
-    char *file_path = malloc(sizeof(char) * 150); 
-    /// TODO: Da eseguire controllo sulla malloc
+    char *to_send[100];
+    char *file_path = malloc(sizeof(char) * 150);
+    check_malloc(file_path);
 
-    //// TODO: make a function out of it
-    // Variables and structs
-    DIR *dir = opendir(buf);
-    struct dirent *file_dir = readdir(dir);
-    struct stat statbuf;
+    count = search_dir (buf, file_path, to_send, count);
 
-    while (file_dir != NULL) {
-        if (file_dir->d_type == DT_REG &&
-                strncmp(file_dir->d_name, "sendme_", 7) == 0) {
-            // Creating file_path string
-            strcpy(file_path, buf);
-            strcat(strcat(file_path, "/"), file_dir->d_name);
-
-            // Retrieving file stats
-            if (stat(file_path , &statbuf) == -1)
-                errExit("Could not retrieve file stats");
-
-            // Check file size
-            if (statbuf.st_size <= 4096) {
-                // Save file pathname
-                strcpy(to_send[count], file_path);
-                count++;
-            }
-        }
-        file_dir = readdir(dir);
-    }
-    closedir(dir);
-    ////
     /// TODO: da eseguire controllo sulle free (?)
     free(buf);
     free(file_path);
@@ -121,6 +89,7 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
+// Personalised signal handler for SIGUSR1 and SIGINT
 void sigHandler (int sig) {
     // if signal is SIGUSR1, set original mask and kill process
     if(sig == SIGUSR1) {
@@ -133,6 +102,55 @@ void sigHandler (int sig) {
         printf("\n\nI'm awake!\n\n");
 }
 
+// Function that recursively searches files in the specified directory
+int search_dir (char *buf, char *file_path, char *to_send[], int count) {
+    DIR *dir = opendir(buf);
+    struct dirent *file_dir = readdir(dir);
+    struct stat statbuf;
+
+    while (file_dir != NULL) {
+
+        // Check if file_dir refers to a file starting with sendme_
+        if (file_dir->d_type == DT_REG &&
+                strncmp(file_dir->d_name, "sendme_", 7) == 0) {
+
+            // Creating file_path string
+            strcpy(file_path, buf);
+            strcat(strcat(file_path, "/"), file_dir->d_name);
+
+            // Retrieving file stats
+            if (stat(file_path , &statbuf) == -1)
+                errExit("Could not retrieve file stats");
+
+            // Check file size
+            if (statbuf.st_size <= 4096) {
+                // Allocate memory for file_path
+                to_send[count] = malloc(sizeof(char) * strlen(file_path));
+                check_malloc(to_send[count]);
+                // saving file_path
+                strcpy(to_send[count], file_path);
+                count++;
+            }
+        }
+
+        // Check if file_dir refers to a directory
+        if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0) {
+            // Creating file_path string
+            strcpy(file_path, buf);
+            strcat(strcat(file_path, "/"), file_dir->d_name);
+            char *new_file_path = NULL;
+
+            count = search_dir(file_path, new_file_path, to_send, count);
+        }
+
+        file_dir = readdir(dir);
+    }
+    closedir(dir);
+
+    return count;
+}
+
+// Function used to reset the default mask of the process
 void set_original_mask() {
     // reset the signal mask of the process = restore original mask
     if(sigprocmask(SIG_SETMASK, &original_set_signals, NULL) == -1)

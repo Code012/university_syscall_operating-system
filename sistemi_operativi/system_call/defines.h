@@ -15,6 +15,8 @@ struct queue_msg {
     // DA PROVARE TERMINATORE
 };
 
+void check_malloc (void *pointer);
+
 /*
 struct general_msg {
     pid_t pid;
