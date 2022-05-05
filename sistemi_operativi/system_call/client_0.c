@@ -18,7 +18,7 @@ sigset_t new_set_signals;
 
 // manipulation of a signal & mod signal mask
 void sigHandler(int sig);
-int search_dir (char *buf, char *file_path, char *to_send[], int count);
+int search_dir (char *buf, char *to_send[], int count);
 void set_original_mask();
 void create_signal_mask();
 
@@ -71,14 +71,10 @@ int main(int argc, char * argv[]) {
     int count = 0;
     //char to_send[100][150];
     char *to_send[100];
-    char *file_path = malloc(sizeof(char) * 150);
-    check_malloc(file_path);
 
-    count = search_dir (buf, file_path, to_send, count);
+    count = search_dir (buf, to_send, count);
 
-    /// TODO: da eseguire controllo sulle free (?)
     free(buf);
-    free(file_path);
   
     printf("n = %d\n\n", count);
     for (int i = 0 ; i < count ; i++) {
@@ -103,8 +99,11 @@ void sigHandler (int sig) {
 }
 
 // Function that recursively searches files in the specified directory
-int search_dir (char *buf, char *file_path, char *to_send[], int count) {
+int search_dir (char *buf, char *to_send[], int count) {
+    // Structs and variables
     DIR *dir = opendir(buf);
+    char *file_path = malloc(sizeof(char) * 150);
+    check_malloc(file_path);
     struct dirent *file_dir = readdir(dir);
     struct stat statbuf;
 
@@ -130,6 +129,7 @@ int search_dir (char *buf, char *file_path, char *to_send[], int count) {
                 // saving file_path
                 strcpy(to_send[count], file_path);
                 count++;
+                printf("%d\n", count);
             }
         }
 
@@ -138,14 +138,15 @@ int search_dir (char *buf, char *file_path, char *to_send[], int count) {
             // Creating file_path string
             strcpy(file_path, buf);
             strcat(strcat(file_path, "/"), file_dir->d_name);
-            char *new_file_path = NULL;
 
-            count = search_dir(file_path, new_file_path, to_send, count);
+            count = search_dir(file_path, to_send, count);
         }
 
         file_dir = readdir(dir);
     }
-    closedir(dir);
+    free(file_path);
+    if (closedir(dir) == -1)
+        errExit("Error while closing directory");
 
     return count;
 }
