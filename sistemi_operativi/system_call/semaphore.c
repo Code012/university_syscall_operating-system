@@ -5,6 +5,15 @@
 #include "err_exit.h"
 #include "semaphore.h"
 
+int semget_usr (key_t key, int nsems, int flags){
+    int semid = semget(key, nsems, flags);
+
+    if(semid == -1)
+        errExit("Error while creating the semaphore");
+
+    return semid;
+}
+
 void semop_usr (int semid, unsigned short sem_num, short sem_op) {
     // initialize the struct to check value 0 of a semaphore (flag 0)
     // if the value of semaphore isn't zero,

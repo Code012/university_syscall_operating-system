@@ -15,7 +15,8 @@ union semun {
     unsigned short * array;
 };
 
-// Definition of a semaphore operation whitout using a buffer
+// Definition of semaphore functions
+int semget_usr (key_t key, int nsems, int flags);
 void semop_usr (int semid, unsigned short sem_num, short sem_op);
 
 #endif

@@ -15,6 +15,7 @@
 
 int main(int argc, char * argv[]) {
     //init variables
+    int semid;
     int queue_id;
     int fifo1_fd;
     int fifo2_fd;
@@ -22,6 +23,9 @@ int main(int argc, char * argv[]) {
     int n_files;
     ssize_t num_read;
     struct queue_msg *shmpointer;
+
+    // Creation of all the semaphores
+    semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     // creation of all IPC's
     create_fifo("FIFO1");
@@ -33,7 +37,7 @@ int main(int argc, char * argv[]) {
 
     // opening and attaching all of the IPC
     fifo1_fd = open_fifo("FIFO1", O_RDONLY);
-    //fifo2_fd = open_fifo("FIFO2", O_RDONLY);
+    fifo2_fd = open_fifo("FIFO2", O_RDONLY);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
     
     // Lock until n_files are receveid via FIFO1
