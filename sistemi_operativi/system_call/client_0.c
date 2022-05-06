@@ -63,6 +63,9 @@ int main(int argc, char * argv[]) {
         semid = semget_usr(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
         sleep(2);
     }while(semid == -1);
+
+    // Waiting for IPCs to be created
+    semop_usr(semid, 0, -1);
     
     // opening of all the IPC's
     int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
@@ -110,7 +113,11 @@ int main(int argc, char * argv[]) {
      * CLIENT-SERVER COMMUNICATION *
      *******************************/
 
+    // Writing n_files on FIFO1
     write_fifo(fifo1_fd, &count, sizeof(count));
+
+    // Unlocking semaphore 1 (allow server to read from FIFO1)
+    semop_usr(semid, 1, 1);
     
     
     /**************

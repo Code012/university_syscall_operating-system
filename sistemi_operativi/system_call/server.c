@@ -27,13 +27,23 @@ int main(int argc, char * argv[]) {
     // Creation of all the semaphores
     semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
+    union semun semarg;
+    unsigned short semarray[5] = {0, 0, 1, 1, 1};
+    semarg.array = semarray;
+
+    if (semctl(semid, 0, SETALL, semarg) == -1)
+        errExit("Error while initializing semaphore set");
+
     // creation of all IPC's
     create_fifo("FIFO1");
     create_fifo("FIFO2");
     queue_id = msgget(ftok("client_0", 'a'), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
     if(queue_id == -1)
-        errExit("Error creating a message queue");
+        errExit("Error while creating a message queue");
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+
+    // Unlocking semaphore 0 (all IPCs have been created)
+    semop_usr(semid, 0, 1);
 
     // opening and attaching all of the IPC
     fifo1_fd = open_fifo("FIFO1", O_RDONLY);
@@ -41,10 +51,10 @@ int main(int argc, char * argv[]) {
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
     
     // Lock until n_files are receveid via FIFO1
+    semop_usr(semid, 1, -1);
 
-    do{
-        num_read = read_fifo(fifo1_fd, &n_files, sizeof(int));
-    } while(num_read == 0);
+    // Retrieve n_files from FIFO1
+    read_fifo(fifo1_fd, &n_files, sizeof(int));
 
     printf("%d", n_files);
 

@@ -6,12 +6,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>     
+#include <stdio.h>
 #include "err_exit.h"
 #include "fifo.h"
 
 void create_fifo (const char *pathname) {
-    if (mkfifo(pathname, S_IRUSR | S_IWUSR) == -1)
+    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR) == -1) {
+        printf("aa\n");
         errExit("mkfifo failed!");
+    }
 }
 
 int open_fifo (const char *pathname, int flags) {
@@ -31,7 +34,7 @@ ssize_t read_fifo (int fd, void *buf, ssize_t bytes_to_read) {
         errExit("read_fifo failed!");
 
     // check if read was succesfull
-    if (char_read != bytes_to_read)
+    if (char_read != bytes_to_read && char_read != 0)
         errExit("broken fifo while reading error!");
 
     return char_read;
