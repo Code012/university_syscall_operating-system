@@ -29,6 +29,7 @@ void sigHandler(int sig);
 int search_dir (char *buf, char *to_send[], int count);
 void set_original_mask();
 void create_signal_mask();
+int semid;
 
 int main(int argc, char * argv[]) {
     /**************
@@ -56,12 +57,21 @@ int main(int argc, char * argv[]) {
      * OBTAINING IDs *
      *****************/
 
+    // Semaphores
+    do{
+        printf("Looking for the semaphore.../n");
+        semid = semget_usr(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
+        sleep(2);
+    }while(semid == -1);
+    
     // opening of all the IPC's
     int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
     int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
     int queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
     int shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     struct queue_msg *shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
+    
+
     
     /* resume execution after SIGINT */
 
