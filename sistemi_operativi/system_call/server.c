@@ -47,7 +47,7 @@ int main(int argc, char * argv[]) {
 
     // delete and free all IPC's
     close(fifo1_fd);
-    //close(fifo2_fd);
+    close(fifo2_fd);
     free_shared_memory(shmpointer);
 
     unlink("FIFO1");

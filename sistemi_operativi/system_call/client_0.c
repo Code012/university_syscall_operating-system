@@ -6,12 +6,14 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <linux/limits.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/shm.h>
 #include <sys/msg.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "defines.h"
 #include "err_exit.h"
 #include "fifo.h"
@@ -49,9 +51,14 @@ int main(int argc, char * argv[]) {
     // attend a signal...
     pause();
 
+
+    /*****************
+     * OBTAINING IDs *
+     *****************/
+
     // opening of all the IPC's
     int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
-    //int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
+    int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
     int queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
     int shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     struct queue_msg *shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
@@ -62,6 +69,7 @@ int main(int argc, char * argv[]) {
     sigfillset(&new_set_signals);
     if(sigprocmask(SIG_SETMASK, &new_set_signals, NULL) == -1)
         errExit("sigprocmask(original_set) failed");
+
 
     /****************
      * FILE READING *
@@ -86,24 +94,39 @@ int main(int argc, char * argv[]) {
     char *to_send[100];
 
     count = search_dir (buf, to_send, count);
+
+
+    /*******************************
+     * CLIENT-SERVER COMMUNICATION *
+     *******************************/
+
     write_fifo(fifo1_fd, &count, sizeof(count));
+    
+    
+    /**************
+     * CLOSE IPCs *
+     **************/    
+    
     close(fifo1_fd);
+    close(fifo2_fd);
+    free_shared_memory(shmpointer);
 
     free(buf);
+    for (int i = 0; to_send[i] != NULL && i < 100; i++)
+        free(to_send[i]);
   
     printf("n = %d\n\n", count);
     for (int i = 0 ; i < count ; i++) {
         printf("to_send[%d] = %s\n", i, to_send[i]);
     }
-    
 
     return 0;
 }
 
+
     /******************************
     * BEGIN FUNCTIONS DEFINITIONS *
     *******************************/
-
 
 // Personalised signal handler for SIGUSR1 and SIGINT
 void sigHandler (int sig) {
@@ -122,13 +145,12 @@ void sigHandler (int sig) {
 int search_dir (char *buf, char *to_send[], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
-    char *file_path = malloc(sizeof(char) * 150);
+    char *file_path = malloc(sizeof(char) * PATH_MAX);
     check_malloc(file_path);
     struct dirent *file_dir = readdir(dir);
     struct stat statbuf;
 
     while (file_dir != NULL) {
-
         // Check if file_dir refers to a file starting with sendme_
         if (file_dir->d_type == DT_REG &&
                 strncmp(file_dir->d_name, "sendme_", 7) == 0) {
@@ -141,7 +163,7 @@ int search_dir (char *buf, char *to_send[], int count) {
             if (stat(file_path , &statbuf) == -1)
                 errExit("Could not retrieve file stats");
 
-            // Check file size
+            // Check file size (4KB -> 4096)
             if (statbuf.st_size <= 4096) {
                 // Allocate memory for file_path
                 to_send[count] = malloc(sizeof(char) * strlen(file_path));
@@ -167,7 +189,7 @@ int search_dir (char *buf, char *to_send[], int count) {
     free(file_path);
     if (closedir(dir) == -1)
         errExit("Error while closing directory");
-
+    
     return count;
 }
 
