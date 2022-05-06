@@ -7,9 +7,9 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 
-int alloc_shared_memory(key_t shmKey, size_t size) {
+int alloc_shared_memory(key_t shmKey, size_t size, int flags) {
     // get, or create, a shared memory segment
-    int shmid = shmget(shmKey, size, IPC_CREAT | S_IRUSR | S_IWUSR);
+    int shmid = shmget(shmKey, size, flags);
 
     if(shmid == -1)
         errExit("could not allocate shared memory");
@@ -19,7 +19,7 @@ int alloc_shared_memory(key_t shmKey, size_t size) {
 
 void *attach_shared_memory(int shmid, int shmflg) {
     // attach the shared memory
-    int *ptr_to_shmem = (int *)shmat(shmid, NULL, shmflg);
+    void *ptr_to_shmem = shmat(shmid, NULL, shmflg);
 
     if(ptr_to_shmem == (void *)-1)
         errExit("could not attach shared memory");

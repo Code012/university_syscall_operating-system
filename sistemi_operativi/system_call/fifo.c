@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <fcntl.h>      // 
+#include <fcntl.h>     
 #include "err_exit.h"
 #include "fifo.h"
 
@@ -24,7 +24,7 @@ int open_fifo (const char *pathname, int flags) {
     return fd;
 }
 
-ssize_t read_fifo (int fd, void *buf, size_t bytes_to_read) {
+ssize_t read_fifo (int fd, void *buf, ssize_t bytes_to_read) {
     ssize_t char_read = read(fd, buf, bytes_to_read);
 
     if (char_read == -1)
@@ -37,7 +37,7 @@ ssize_t read_fifo (int fd, void *buf, size_t bytes_to_read) {
     return char_read;
 }
 
-void write_fifo (int fd, void *buf, size_t bytes_to_write) {
+void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {
     ssize_t char_write = write(fd, buf, bytes_to_write); 
 
     if (char_write == -1)

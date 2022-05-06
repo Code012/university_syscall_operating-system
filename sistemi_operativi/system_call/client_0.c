@@ -9,8 +9,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <sys/shm.h>
+#include <sys/msg.h>
 #include "defines.h"
 #include "err_exit.h"
+#include "fifo.h"
+#include "semaphore.h"
+#include "shared_memory.h"
 
 // set of signals
 sigset_t original_set_signals;
@@ -42,6 +48,13 @@ int main(int argc, char * argv[]) {
 
     // attend a signal...
     pause();
+
+    // opening of all the IPC's
+    int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
+    //int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
+    int queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
+    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
+    struct queue_msg *shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
     
     /* resume execution after SIGINT */
 
@@ -73,6 +86,8 @@ int main(int argc, char * argv[]) {
     char *to_send[100];
 
     count = search_dir (buf, to_send, count);
+    write_fifo(fifo1_fd, &count, sizeof(count));
+    close(fifo1_fd);
 
     free(buf);
   
@@ -84,6 +99,11 @@ int main(int argc, char * argv[]) {
 
     return 0;
 }
+
+    /******************************
+    * BEGIN FUNCTIONS DEFINITIONS *
+    *******************************/
+
 
 // Personalised signal handler for SIGUSR1 and SIGINT
 void sigHandler (int sig) {

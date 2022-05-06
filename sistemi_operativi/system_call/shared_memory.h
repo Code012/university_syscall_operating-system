@@ -9,7 +9,7 @@
 // The alloc_shared_memory creates, if it does not exist, a shared
 // memory segment with size bytes and shmKey key.
 // It returns the shmid on success, otherwise it terminates the calling process
-int alloc_shared_memory(key_t shmKey, size_t size);
+int alloc_shared_memory(key_t shmKey, size_t size, int flags);
 
 // The attach_shared_memory attaches a shared memory segment in the logic
 // address space of the calling process.
