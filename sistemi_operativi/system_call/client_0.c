@@ -59,7 +59,7 @@ int main(int argc, char * argv[]) {
 
     // Semaphores
     do{
-        printf("Looking for the semaphore.../n");
+        printf("Looking for the semaphore...\n\n");
         semid = semget_usr(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
         sleep(2);
     }while(semid == -1);
