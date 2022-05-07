@@ -11,10 +11,8 @@
 #include "fifo.h"
 
 void create_fifo (const char *pathname) {
-    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR) == -1) {
-        printf("aa\n");
+    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR) == -1)
         errExit("mkfifo failed!");
-    }
 }
 
 int open_fifo (const char *pathname, int flags) {

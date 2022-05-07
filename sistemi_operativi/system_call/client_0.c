@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) {
 
     // Counters and memory
     int count = 0;
-    //char to_send[100][150];
+    // Creating an array to store the file paths
     char *to_send[100];
 
     count = search_dir (buf, to_send, count);
@@ -118,24 +118,26 @@ int main(int argc, char * argv[]) {
 
     // Unlocking semaphore 1 (allow server to read from FIFO1)
     semop_usr(semid, 1, 1);
-    
+
+    // Printing all file routes
+    printf("\nn = %d\n\n", count);
+    for (int i = 0 ; i < count ; i++) {
+        printf("to_send[%d] = %s\n", i, to_send[i]);
+    }
     
     /**************
      * CLOSE IPCs *
-     **************/    
-    
+     **************/ 
+
     close(fifo1_fd);
     close(fifo2_fd);
     free_shared_memory(shmpointer);
 
     free(buf);
-    for (int i = 0; to_send[i] != NULL && i < 100; i++)
+    
+    // Freeing the array entries containing file paths
+    for (int i = 0 ; i < count ; i++)
         free(to_send[i]);
-  
-    printf("n = %d\n\n", count);
-    for (int i = 0 ; i < count ; i++) {
-        printf("to_send[%d] = %s\n", i, to_send[i]);
-    }
 
     return 0;
 }
@@ -188,7 +190,6 @@ int search_dir (char *buf, char *to_send[], int count) {
                 // saving file_path
                 strcpy(to_send[count], file_path);
                 count++;
-                printf("%d\n", count);
             }
         }
 

@@ -56,7 +56,7 @@ int main(int argc, char * argv[]) {
     // Retrieve n_files from FIFO1
     read_fifo(fifo1_fd, &n_files, sizeof(int));
 
-    printf("%d", n_files);
+    printf("%d\n", n_files);
 
 
     // delete and free all IPC's
@@ -67,6 +67,8 @@ int main(int argc, char * argv[]) {
     unlink("FIFO1");
     unlink("FIFO2");
     if(msgctl(queue_id, IPC_RMID, NULL) == -1)
+        errExit("Error while removing the message queue");
+    if(semctl(semid, 0, IPC_RMID, NULL) == -1)
         errExit("Error while removing the message queue");
     remove_shared_memory(shmem_id);
 
