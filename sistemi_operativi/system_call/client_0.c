@@ -93,7 +93,7 @@ int main(int argc, char * argv[]) {
         errExit("Error while changing directory");
 
     // alloc 150 character
-    char *buf = malloc(sizeof(char) * 150);
+    char *buf = malloc(sizeof(char) * PATH_MAX);
     check_malloc(buf);
     
     // get current wotking directory
