@@ -23,13 +23,12 @@ int main(int argc, char * argv[]) {
     int n_files;
     ssize_t num_read;
     struct queue_msg *shmpointer;
-
-    // Creation of all the semaphores
-    semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-
     union semun semarg;
     unsigned short semarray[5] = {0, 0, 1, 1, 1};
     semarg.array = semarray;
+
+    // creation of all the semaphores
+    semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
@@ -40,9 +39,11 @@ int main(int argc, char * argv[]) {
     queue_id = msgget(ftok("client_0", 'a'), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
     if(queue_id == -1)
         errExit("Error while creating a message queue");
-    shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    shmem_id = alloc_shared_memory(ftok("client_0", 'a'),
+                                    sizeof(struct queue_msg) * 50,
+                                    IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
-    // Unlocking semaphore 0 (all IPCs have been created)
+    // unlocking semaphore 0 (all IPCs have been created)
     semop_usr(semid, 0, 1);
 
     // opening and attaching all of the IPC
@@ -50,7 +51,7 @@ int main(int argc, char * argv[]) {
     fifo2_fd = open_fifo("FIFO2", O_RDONLY);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
     
-    // Lock until n_files are receveid via FIFO1
+    // lock first semaphore until n_files are receveid via FIFO1
     semop_usr(semid, 1, -1);
 
     // Retrieve n_files from FIFO1

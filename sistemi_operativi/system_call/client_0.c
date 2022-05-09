@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <linux/limits.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <linux/limits.h>
 #include <sys/shm.h>
 #include <sys/msg.h>
 #include <sys/types.h>
@@ -43,26 +43,31 @@ int main(int argc, char * argv[]) {
     char *path_to_dir = argv[1];
 
 
-    /***********************
+    /**********************
      * CREATE SIGNAL MASK *
-     ***********************/
+     **********************/
 
     create_signal_mask();
 
     // attend a signal...
     pause();
 
+    // Blocking all blockable signals
+    sigfillset(&new_set_signals);
+    if(sigprocmask(SIG_SETMASK, &new_set_signals, NULL) == -1)
+        errExit("sigprocmask(original_set) failed");
+
 
     /*****************
      * OBTAINING IDs *
      *****************/
 
-    // Semaphores
-    do{
+    // try to obtain set id of semaphores
+    do {
         printf("Looking for the semaphore...\n\n");
         semid = semget_usr(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
         sleep(2);
-    }while(semid == -1);
+    } while(semid == -1);
 
     // Waiting for IPCs to be created
     semop_usr(semid, 0, -1);
@@ -71,17 +76,10 @@ int main(int argc, char * argv[]) {
     int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
     int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
     int queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
-    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
+    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'),
+                                        sizeof(struct queue_msg) * 50,
+                                        S_IRUSR | S_IWUSR);
     struct queue_msg *shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
-    
-
-    
-    /* resume execution after SIGINT */
-
-    // Blocking all blockable signals
-    sigfillset(&new_set_signals);
-    if(sigprocmask(SIG_SETMASK, &new_set_signals, NULL) == -1)
-        errExit("sigprocmask(original_set) failed");
 
 
     /****************
@@ -92,20 +90,22 @@ int main(int argc, char * argv[]) {
     if (chdir(path_to_dir) == -1)
         errExit("Error while changing directory");
 
-    // alloc 150 character
+    // alloc 4096 character
     char *buf = malloc(sizeof(char) * PATH_MAX);
     check_malloc(buf);
     
     // get current wotking directory
-    getcwd(buf, 150);
+    getcwd(buf, PATH_MAX);
 
     printf("Ciao %s, ora inizio l’invio dei file contenuti in %s\n\n", getenv("USER"), buf);
 
-    // Counters and memory
+    // file found counter
     int count = 0;
-    // Creating an array to store the file paths
+    
+    // creating an array to store the file paths
     char *to_send[100];
 
+    // search files into directory
     count = search_dir (buf, to_send, count);
 
 
@@ -204,6 +204,7 @@ int search_dir (char *buf, char *to_send[], int count) {
 
         file_dir = readdir(dir);
     }
+    
     free(file_path);
     if (closedir(dir) == -1)
         errExit("Error while closing directory");
