@@ -20,7 +20,7 @@
 #include "semaphore.h"
 #include "shared_memory.h"
 
-
+#define MAX_FILES 100
 #define PATH 150
 
 // set of signals
@@ -79,9 +79,7 @@ int main(int argc, char * argv[]) {
     int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
     int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
     int queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
-    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'),
-                                        sizeof(struct queue_msg) * 50,
-                                        S_IRUSR | S_IWUSR);
+    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     struct queue_msg *shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
 
@@ -104,7 +102,7 @@ int main(int argc, char * argv[]) {
     // file found counter
     int count = 0;
     // Creating an array to store the file paths
-    char to_send[100][PATH];
+    char to_send[MAX_FILES][PATH];
 
     // search files into directory
     count = search_dir (buf, to_send, count);
@@ -161,10 +159,8 @@ int search_dir (char buf[], char to_send[][PATH], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
     char file_path[PATH];
-
     struct dirent *file_dir = readdir(dir);
-    struct stat *statbuf = malloc(sizeof(struct stat));
-    check_malloc(statbuf);
+    struct stat statbuf;
 
     while (file_dir != NULL) {
         // Check if file_dir refers to a file starting with sendme_
@@ -175,7 +171,7 @@ int search_dir (char buf[], char to_send[][PATH], int count) {
             strcat(strcat(file_path, "/"), file_dir->d_name);
 
             // retrieving file stats
-            if (stat(file_path, statbuf) == -1)
+            if (stat(file_path, &statbuf) == -1)
                 errExit("Could not retrieve file stats");
 
             // Check file size (4KB -> 4096)
@@ -187,9 +183,7 @@ int search_dir (char buf[], char to_send[][PATH], int count) {
         }
 
         // check if file_dir refers to a directory
-        if (file_dir->d_type == DT_DIR &&
-                strcmp(file_dir->d_name, ".") != 0 &&
-                strcmp(file_dir->d_name, "..") != 0) {
+        if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0) {
             // creating file_path string
             strcpy(file_path, buf);
             strcat(strcat(file_path, "/"), file_dir->d_name);
