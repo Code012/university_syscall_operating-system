@@ -20,8 +20,8 @@
 #include "semaphore.h"
 #include "shared_memory.h"
 
-#define MAX_NUM_FILES 100
-#define MAX_LENGTH_PATH 150
+
+#define PATH 150
 
 // set of signals
 sigset_t original_set_signals;
@@ -29,7 +29,7 @@ sigset_t new_set_signals;
 
 // manipulation of a signal & mod signal mask
 void sigHandler(int sig);
-int search_dir (char *buf, char *to_send[], int count);
+int search_dir (char buf[], char to_send[][PATH], int count);
 void set_original_mask();
 void create_signal_mask();
 int semid;
@@ -93,9 +93,8 @@ int main(int argc, char * argv[]) {
     if (chdir(path_to_dir) == -1)
         errExit("Error while changing directory");
 
-    // alloc MAX_LENGTH_PATH (150) character
-    char *buf = malloc(sizeof(char) * MAX_LENGTH_PATH);
-    check_malloc(buf);
+    // alloc 150 character
+    char buf[PATH];
     
     // get current wotking directory
     getcwd(buf, MAX_LENGTH_PATH);
@@ -104,9 +103,8 @@ int main(int argc, char * argv[]) {
 
     // file found counter
     int count = 0;
-    
-    // creating an array to store the file paths
-    char *to_send[MAX_NUM_FILES];
+    // Creating an array to store the file paths
+    char to_send[100][PATH];
 
     // search files into directory
     count = search_dir (buf, to_send, count);
@@ -136,8 +134,6 @@ int main(int argc, char * argv[]) {
     close(fifo2_fd);
     free_shared_memory(shmpointer);
 
-    free(buf);
-
     return 0;
 }
 
@@ -159,20 +155,20 @@ void sigHandler (int sig) {
         printf("\n\nI'm awake!\n\n");
 }
 
-// function that recursively searches files in the specified directory
-int search_dir (char *buf, char **to_send, int count) {
+
+// Function that recursively searches files in the specified directory
+int search_dir (char buf[], char to_send[][PATH], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
-    char *file_path = malloc(sizeof(char) * MAX_LENGTH_PATH);
-    check_malloc(file_path);
+    char file_path[PATH];
+
     struct dirent *file_dir = readdir(dir);
     struct stat *statbuf = malloc(sizeof(struct stat));
     check_malloc(statbuf);
 
     while (file_dir != NULL) {
-        // check if file_dir refers to a file starting with sendme_
-        if (file_dir->d_type == DT_REG &&
-                strncmp(file_dir->d_name, "sendme_", 7) == 0) {
+        // Check if file_dir refers to a file starting with sendme_
+        if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0) {
 
             // creating file_path string
             strcpy(file_path, buf);
@@ -182,11 +178,8 @@ int search_dir (char *buf, char **to_send, int count) {
             if (stat(file_path, statbuf) == -1)
                 errExit("Could not retrieve file stats");
 
-            // check file size (4KB -> 4096)
-            if (statbuf->st_size <= 4096) {
-                // allocate memory for file_path
-                to_send[count] = malloc(sizeof(char) * strlen(file_path));
-                check_malloc(to_send[count]);
+            // Check file size (4KB -> 4096)
+            if (statbuf.st_size <= 4096) {
                 // saving file_path
                 strcpy(to_send[count], file_path);
                 count++;
@@ -207,9 +200,6 @@ int search_dir (char *buf, char **to_send, int count) {
 
         file_dir = readdir(dir);
     }
-    
-    free(statbuf);
-    free(file_path);
 
     if (closedir(dir) == -1)
         errExit("Error while closing directory");
