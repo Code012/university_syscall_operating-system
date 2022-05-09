@@ -1,17 +1,18 @@
 /// @file sender_manager.c
 /// @brief Contiene l'implementazione del sender_manager.
 
+#include <fcntl.h> 
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/msg.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+
 #include "err_exit.h"
 #include "defines.h"
 #include "shared_memory.h"
 #include "semaphore.h"
 #include "fifo.h"
-#include <sys/msg.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h> 
-#include <sys/shm.h>
-#include <stdio.h>
 
 int main(int argc, char * argv[]) {
     //init variables
