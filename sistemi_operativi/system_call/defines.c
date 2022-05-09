@@ -9,5 +9,4 @@
 void check_malloc (void *pointer) {
     if (pointer == NULL)
         errExit("Malloc failed");
-
 }

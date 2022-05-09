@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <linux/limits.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <linux/limits.h>
 #include <sys/shm.h>
 #include <sys/msg.h>
 #include <sys/types.h>
@@ -19,6 +19,7 @@
 #include "fifo.h"
 #include "semaphore.h"
 #include "shared_memory.h"
+
 
 #define PATH 150
 
@@ -45,45 +46,43 @@ int main(int argc, char * argv[]) {
     char *path_to_dir = argv[1];
 
 
-    /***********************
+    /**********************
      * CREATE SIGNAL MASK *
-     ***********************/
+     **********************/
 
     create_signal_mask();
 
     // attend a signal...
     pause();
 
+    // blocking all blockable signals
+    sigfillset(&new_set_signals);
+    if(sigprocmask(SIG_SETMASK, &new_set_signals, NULL) == -1)
+        errExit("sigprocmask(original_set) failed");
+
 
     /*****************
      * OBTAINING IDs *
      *****************/
 
-    // Semaphores
-    do{
+    // try to obtain set id of semaphores
+    do {
         printf("Looking for the semaphore...\n\n");
         semid = semget_usr(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
         sleep(2);
-    }while(semid == -1);
+    } while(semid == -1);
 
-    // Waiting for IPCs to be created
+    // waiting for IPCs to be created
     semop_usr(semid, 0, -1);
     
     // opening of all the IPC's
     int fifo1_fd = open_fifo("FIFO1", O_WRONLY);
     int fifo2_fd = open_fifo("FIFO2", O_WRONLY);
     int queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
-    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
+    int shmem_id = alloc_shared_memory(ftok("client_0", 'a'),
+                                        sizeof(struct queue_msg) * 50,
+                                        S_IRUSR | S_IWUSR);
     struct queue_msg *shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
-    
-
-    
-    /* resume execution after SIGINT */
-
-    // Blocking all blockable signals
-    sigfillset(&new_set_signals);
-    if(sigprocmask(SIG_SETMASK, &new_set_signals, NULL) == -1)
-        errExit("sigprocmask(original_set) failed");
 
 
     /****************
@@ -98,15 +97,16 @@ int main(int argc, char * argv[]) {
     char buf[PATH];
     
     // get current wotking directory
-    getcwd(buf, 150);
+    getcwd(buf, MAX_LENGTH_PATH);
 
     printf("Ciao %s, ora inizio l’invio dei file contenuti in %s\n\n", getenv("USER"), buf);
 
-    // Counters and memory
+    // file found counter
     int count = 0;
     // Creating an array to store the file paths
     char to_send[100][PATH];
 
+    // search files into directory
     count = search_dir (buf, to_send, count);
 
 
@@ -122,10 +122,10 @@ int main(int argc, char * argv[]) {
 
     // Printing all file routes
     printf("\nn = %d\n\n", count);
-    for (int i = 0 ; i < count ; i++) {
+    for (int i = 0 ; i < count ; i++)
         printf("to_send[%d] = %s\n", i, to_send[i]);
-    }
     
+
     /**************
      * CLOSE IPCs *
      **************/ 
@@ -155,24 +155,27 @@ void sigHandler (int sig) {
         printf("\n\nI'm awake!\n\n");
 }
 
+
 // Function that recursively searches files in the specified directory
 int search_dir (char buf[], char to_send[][PATH], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
     char file_path[PATH];
+
     struct dirent *file_dir = readdir(dir);
-    struct stat statbuf;
+    struct stat *statbuf = malloc(sizeof(struct stat));
+    check_malloc(statbuf);
 
     while (file_dir != NULL) {
         // Check if file_dir refers to a file starting with sendme_
         if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0) {
 
-            // Creating file_path string
+            // creating file_path string
             strcpy(file_path, buf);
             strcat(strcat(file_path, "/"), file_dir->d_name);
 
-            // Retrieving file stats
-            if (stat(file_path , &statbuf) == -1)
+            // retrieving file stats
+            if (stat(file_path, statbuf) == -1)
                 errExit("Could not retrieve file stats");
 
             // Check file size (4KB -> 4096)
@@ -183,12 +186,15 @@ int search_dir (char buf[], char to_send[][PATH], int count) {
             }
         }
 
-        // Check if file_dir refers to a directory
-        if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0) {
-            // Creating file_path string
+        // check if file_dir refers to a directory
+        if (file_dir->d_type == DT_DIR &&
+                strcmp(file_dir->d_name, ".") != 0 &&
+                strcmp(file_dir->d_name, "..") != 0) {
+            // creating file_path string
             strcpy(file_path, buf);
             strcat(strcat(file_path, "/"), file_dir->d_name);
 
+            // recursive call
             count = search_dir(file_path, to_send, count);
         }
 
@@ -201,7 +207,7 @@ int search_dir (char buf[], char to_send[][PATH], int count) {
     return count;
 }
 
-// Function used to reset the default mask of the process
+// function used to reset the default mask of the process
 void set_original_mask() {
     // reset the signal mask of the process = restore original mask
     if(sigprocmask(SIG_SETMASK, &original_set_signals, NULL) == -1)
