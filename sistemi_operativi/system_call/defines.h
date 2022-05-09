@@ -7,12 +7,14 @@
 #include <sys/types.h>
 #include <linux/limits.h>
 
+#define MAX_LENGTH_PATH 150
+
 // the my_msg structure defines a file fregment sent by a client
 struct queue_msg {
     long mtype;
     pid_t pid;
-    char pathname[PATH_MAX];
-    char fragment[1025];            // one more char to compensate for string terminator
+    char pathname[MAX_LENGTH_PATH + 1]; // one more char to compensate for string terminator
+    char fragment[1025];                // one more char to compensate for string terminator
     // DA PROVARE TERMINATORE
 };
 

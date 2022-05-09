@@ -21,6 +21,7 @@
 #include "shared_memory.h"
 
 #define MAX_NUM_FILES 100
+#define MAX_LENGTH_PATH 150
 
 // set of signals
 sigset_t original_set_signals;
@@ -28,7 +29,7 @@ sigset_t new_set_signals;
 
 // manipulation of a signal & mod signal mask
 void sigHandler(int sig);
-int search_dir (char *buf, char **to_send, int count);
+int search_dir (char *buf, char *to_send[], int count);
 void set_original_mask();
 void create_signal_mask();
 int semid;
@@ -92,12 +93,12 @@ int main(int argc, char * argv[]) {
     if (chdir(path_to_dir) == -1)
         errExit("Error while changing directory");
 
-    // alloc PATH_MAX (4096) character
-    char *buf = malloc(sizeof(char) * PATH_MAX);
+    // alloc MAX_LENGTH_PATH (150) character
+    char *buf = malloc(sizeof(char) * MAX_LENGTH_PATH);
     check_malloc(buf);
     
     // get current wotking directory
-    getcwd(buf, PATH_MAX);
+    getcwd(buf, MAX_LENGTH_PATH);
 
     printf("Ciao %s, ora inizio l’invio dei file contenuti in %s\n\n", getenv("USER"), buf);
 
@@ -106,13 +107,15 @@ int main(int argc, char * argv[]) {
     
     // creating an array to store the file paths
     char *letters[MAX_NUM_FILES];
-    char **to_send = letters;
-    //!!! DeBuG !!!
-    //printf("Zona di memoria letters: %p. Zona di memoria to_send: %p", *letters, *to_send);
-    //!!!       !!!
+    for (int i = 0; i < MAX_NUM_FILES; i++)
+    {
+        letters[i] = malloc(sizeof(char *) * 150 + 1);
+        check_malloc(letters[i]);
+    }
+    //char *to_send[100];
 
     // search files into directory
-    count = search_dir (buf, to_send, count);
+    count = search_dir (buf, letters, count);
 
 
     /*******************************
@@ -128,7 +131,7 @@ int main(int argc, char * argv[]) {
     // Printing all file routes
     printf("\nn = %d\n\n", count);
     for (int i = 0 ; i < count ; i++)
-        printf("to_send[%d] = %s\n", i, (char *) to_send[i]);
+        printf("to_send[%d] = %s\n", i, letters[i]);
     
 
     /**************
@@ -166,7 +169,7 @@ void sigHandler (int sig) {
 int search_dir (char *buf, char **to_send, int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
-    char *file_path = malloc(sizeof(char) * PATH_MAX);
+    char *file_path = malloc(sizeof(char) * MAX_LENGTH_PATH);
     check_malloc(file_path);
     struct dirent *file_dir = readdir(dir);
     struct stat *statbuf = malloc(sizeof(struct stat));
@@ -188,8 +191,8 @@ int search_dir (char *buf, char **to_send, int count) {
             // check file size (4KB -> 4096)
             if (statbuf->st_size <= 4096) {
                 // allocate memory for file_path
-                to_send[count] = malloc(sizeof(char *) * strlen(file_path));
-                check_malloc(to_send[count]);
+                //to_send[count] = realloc(to_send[count], strlen(file_path));
+                //check_malloc(to_send[count]);
                 // saving file_path
                 strcpy(to_send[count], file_path);
                 count++;
