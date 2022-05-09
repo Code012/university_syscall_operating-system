@@ -106,16 +106,10 @@ int main(int argc, char * argv[]) {
     int count = 0;
     
     // creating an array to store the file paths
-    char *letters[MAX_NUM_FILES];
-    for (int i = 0; i < MAX_NUM_FILES; i++)
-    {
-        letters[i] = malloc(sizeof(char *) * 150 + 1);
-        check_malloc(letters[i]);
-    }
-    //char *to_send[100];
+    char *to_send[MAX_NUM_FILES];
 
     // search files into directory
-    count = search_dir (buf, letters, count);
+    count = search_dir (buf, to_send, count);
 
 
     /*******************************
@@ -131,7 +125,7 @@ int main(int argc, char * argv[]) {
     // Printing all file routes
     printf("\nn = %d\n\n", count);
     for (int i = 0 ; i < count ; i++)
-        printf("to_send[%d] = %s\n", i, letters[i]);
+        printf("to_send[%d] = %s\n", i, to_send[i]);
     
 
     /**************
@@ -191,8 +185,8 @@ int search_dir (char *buf, char **to_send, int count) {
             // check file size (4KB -> 4096)
             if (statbuf->st_size <= 4096) {
                 // allocate memory for file_path
-                //to_send[count] = realloc(to_send[count], strlen(file_path));
-                //check_malloc(to_send[count]);
+                to_send[count] = malloc(sizeof(char) * strlen(file_path));
+                check_malloc(to_send[count]);
                 // saving file_path
                 strcpy(to_send[count], file_path);
                 count++;
