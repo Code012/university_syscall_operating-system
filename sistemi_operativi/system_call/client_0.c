@@ -20,13 +20,15 @@
 #include "semaphore.h"
 #include "shared_memory.h"
 
+#define PATH 150
+
 // set of signals
 sigset_t original_set_signals;
 sigset_t new_set_signals;
 
 // manipulation of a signal & mod signal mask
 void sigHandler(int sig);
-int search_dir (char *buf, char *to_send[], int count);
+int search_dir (char buf[], char to_send[][PATH], int count);
 void set_original_mask();
 void create_signal_mask();
 int semid;
@@ -93,8 +95,7 @@ int main(int argc, char * argv[]) {
         errExit("Error while changing directory");
 
     // alloc 150 character
-    char *buf = malloc(sizeof(char) * PATH_MAX);
-    check_malloc(buf);
+    char buf[PATH];
     
     // get current wotking directory
     getcwd(buf, 150);
@@ -104,7 +105,7 @@ int main(int argc, char * argv[]) {
     // Counters and memory
     int count = 0;
     // Creating an array to store the file paths
-    char *to_send[100];
+    char to_send[100][PATH];
 
     count = search_dir (buf, to_send, count);
 
@@ -133,12 +134,6 @@ int main(int argc, char * argv[]) {
     close(fifo2_fd);
     free_shared_memory(shmpointer);
 
-    free(buf);
-    
-    // Freeing the array entries containing file paths
-    for (int i = 0 ; i < count ; i++)
-        free(to_send[i]);
-
     return 0;
 }
 
@@ -161,18 +156,16 @@ void sigHandler (int sig) {
 }
 
 // Function that recursively searches files in the specified directory
-int search_dir (char *buf, char *to_send[], int count) {
+int search_dir (char buf[], char to_send[][PATH], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
-    char *file_path = malloc(sizeof(char) * PATH_MAX);
-    check_malloc(file_path);
+    char file_path[PATH];
     struct dirent *file_dir = readdir(dir);
     struct stat statbuf;
 
     while (file_dir != NULL) {
         // Check if file_dir refers to a file starting with sendme_
-        if (file_dir->d_type == DT_REG &&
-                strncmp(file_dir->d_name, "sendme_", 7) == 0) {
+        if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0) {
 
             // Creating file_path string
             strcpy(file_path, buf);
@@ -184,9 +177,6 @@ int search_dir (char *buf, char *to_send[], int count) {
 
             // Check file size (4KB -> 4096)
             if (statbuf.st_size <= 4096) {
-                // Allocate memory for file_path
-                to_send[count] = malloc(sizeof(char) * strlen(file_path));
-                check_malloc(to_send[count]);
                 // saving file_path
                 strcpy(to_send[count], file_path);
                 count++;
@@ -204,7 +194,7 @@ int search_dir (char *buf, char *to_send[], int count) {
 
         file_dir = readdir(dir);
     }
-    free(file_path);
+
     if (closedir(dir) == -1)
         errExit("Error while closing directory");
     
