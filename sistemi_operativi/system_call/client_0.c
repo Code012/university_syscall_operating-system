@@ -1,14 +1,13 @@
 /// @file client.c
 /// @brief Contiene l'implementazione del client.
 
-#include <stdlib.h>
-#include <signal.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <linux/limits.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/shm.h>
 #include <sys/msg.h>
 #include <sys/types.h>
@@ -21,6 +20,7 @@
 #include "shared_memory.h"
 
 #define MAX_NUM_FILES 100
+#define MAX_LENGTH_PATH 150
 
 // set of signals
 sigset_t original_set_signals;
@@ -92,12 +92,12 @@ int main(int argc, char * argv[]) {
     if (chdir(path_to_dir) == -1)
         errExit("Error while changing directory");
 
-    // alloc PATH_MAX (4096) character
-    char *buf = malloc(sizeof(char) * PATH_MAX);
+    // alloc MAX_LENGTH_PATH (150) character
+    char *buf = malloc(sizeof(char) * MAX_LENGTH_PATH);
     check_malloc(buf);
     
     // get current wotking directory
-    getcwd(buf, PATH_MAX);
+    getcwd(buf, MAX_LENGTH_PATH);
 
     printf("Ciao %s, ora inizio l’invio dei file contenuti in %s\n\n", getenv("USER"), buf);
 
@@ -166,7 +166,7 @@ void sigHandler (int sig) {
 int search_dir (char *buf, char **to_send, int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
-    char *file_path = malloc(sizeof(char) * PATH_MAX);
+    char *file_path = malloc(sizeof(char) * MAX_LENGTH_PATH);
     check_malloc(file_path);
     struct dirent *file_dir = readdir(dir);
     struct stat *statbuf = malloc(sizeof(struct stat));
