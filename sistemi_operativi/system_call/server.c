@@ -20,7 +20,7 @@ int main(int argc, char * argv[]) {
     int fifo1_fd;
     int fifo2_fd;
     int shmem_id;
-    int n_files;
+    int n_files;    // files to read from FIFO
     ssize_t num_read;
     struct queue_msg *shmpointer;
     union semun semarg;
@@ -54,10 +54,10 @@ int main(int argc, char * argv[]) {
     // lock first semaphore until n_files are receveid via FIFO1
     semop_usr(semid, 1, -1);
 
-    // Retrieve n_files from FIFO1
+    // retrieve n_files from FIFO1
     read_fifo(fifo1_fd, &n_files, sizeof(int));
 
-    printf("%d\n", n_files);
+    printf("Numeri di file letti dalla FIFO: %d\n", n_files);
 
 
     // delete and free all IPC's
