@@ -24,7 +24,9 @@ int main(int argc, char * argv[]) {
     ssize_t num_read;
     struct queue_msg *shmpointer;
     union semun semarg;
-    unsigned short semarray[5] = {0, 0, 1, 1, 1};
+
+    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem
+    unsigned short semarray[5] = {0, 0, 1, 1, 0};
     semarg.array = semarray;
 
     // creation of all the semaphores
@@ -57,7 +59,10 @@ int main(int argc, char * argv[]) {
     // retrieve n_files from FIFO1
     read_fifo(fifo1_fd, &n_files, sizeof(int));
 
-    printf("Numeri di file letti dalla FIFO: %d\n", n_files);
+    strcpy(shmpointer[0].fragment, "READY");
+    semop_usr(semid, 4, 2);
+
+    //printf("Numeri di file letti dalla FIFO: %d\n", n_files);
 
 
     // delete and free all IPC's
