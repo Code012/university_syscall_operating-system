@@ -15,10 +15,14 @@ sigset_t new_set_signals;
 void sigHandler(int sig);
 void set_original_mask();
 void create_signal_mask();
-int semid;
-pid_t pid;
 
 int main(int argc, char * argv[]) {
+
+    // Init variables
+    int semid;
+    pid_t pid = 1;
+    int i;
+
     /**************
      * CHECK ARGS *
      **************/
@@ -54,8 +58,11 @@ int main(int argc, char * argv[]) {
     do {
         printf("Looking for the semaphore...\n\n");
         semid = semget(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
-        if (semid == -1)
+        if (errno == ENOENT)
             sleep(2);
+        else if(semid == -1){
+            errExit("Error while retrieving the semaphore");
+        }
     } while(semid == -1);
 
     // waiting for IPCs to be created
@@ -104,16 +111,30 @@ int main(int argc, char * argv[]) {
     // Unlocking semaphore 1 (allow server to read from FIFO1)
     semop_usr(semid, 1, 1);
 
+    //Wait for server to send "READY", 
+    //waiting ShdMem semaphore unlock by server 
     semop_usr(semid, 4, -1);
 
     if(strcmp(shmpointer[0].fragment, "READY") != 0){
         errExit("Corrupted start message");
     }
 
-    for(int i = 1; i <= count; i++){
+    for(i = 0; i < count && pid != 0; i++){
         pid = fork();
+        if(pid == -1)
+            errExit("Error while forking");
+    }
 
+    if(pid == 0){
+        printf("%d\n", i);
+        exit(0);
+    } else{
 
+        // Waiting for all child to terminate
+        for(int j = 0; j < count; j++){
+            if(wait(NULL) == -1)
+                errExit("Error while waiting for children");
+        }
     }
 
 
