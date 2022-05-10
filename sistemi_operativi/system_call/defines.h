@@ -4,10 +4,22 @@
 
 #pragma once
 
-#include <sys/types.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <dirent.h>
+#include <fcntl.h>
 #include <linux/limits.h>
+#include <sys/shm.h>
+#include <sys/msg.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define MAX_LENGTH_PATH 150
+#define MAX_FILES 100
+#define PATH 150
 
 // the my_msg structure defines a file fregment sent by a client
 struct queue_msg {
@@ -19,6 +31,7 @@ struct queue_msg {
 };
 
 void check_malloc (void *pointer);
+int search_dir (char buf[], char to_send[][PATH], int count);
 
 /*
 struct general_msg {

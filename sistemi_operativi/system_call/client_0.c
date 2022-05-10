@@ -1,27 +1,11 @@
 /// @file client.c
 /// @brief Contiene l'implementazione del client.
 
-#include <stdlib.h>
-#include <signal.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <dirent.h>
-#include <fcntl.h>
-#include <linux/limits.h>
-#include <sys/shm.h>
-#include <sys/msg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include "defines.h"
 #include "err_exit.h"
 #include "fifo.h"
 #include "semaphore.h"
 #include "shared_memory.h"
-
-#define MAX_FILES 100
-#define PATH 150
 
 // set of signals
 sigset_t original_set_signals;
@@ -29,10 +13,10 @@ sigset_t new_set_signals;
 
 // manipulation of a signal & mod signal mask
 void sigHandler(int sig);
-int search_dir (char buf[], char to_send[][PATH], int count);
 void set_original_mask();
 void create_signal_mask();
 int semid;
+pid_t pid;
 
 int main(int argc, char * argv[]) {
     /**************
@@ -118,11 +102,26 @@ int main(int argc, char * argv[]) {
     // Unlocking semaphore 1 (allow server to read from FIFO1)
     semop_usr(semid, 1, 1);
 
+    semop_usr(semid, 4, -1);
+
+    if(strcmp(shmpointer[0].fragment, "READY") != 0){
+        errExit("Corrupted start message");
+    }
+
+    for(int i = 1; i <= count; i++){
+        pid = fork();
+
+
+    }
+
+
+    /*
     // Printing all file routes
     printf("\nn = %d\n\n", count);
     for (int i = 0 ; i < count ; i++)
         printf("to_send[%d] = %s\n", i, to_send[i]);
     
+    */
 
     /**************
      * CLOSE IPCs *
@@ -134,6 +133,13 @@ int main(int argc, char * argv[]) {
 
     return 0;
 }
+
+
+
+
+// gimmy attento che qui finisce la main!!!
+
+
 
 
     /******************************
@@ -151,54 +157,6 @@ void sigHandler (int sig) {
     // if signal is SIGINT, happy(end) continue
     if(sig == SIGINT)
         printf("\n\nI'm awake!\n\n");
-}
-
-
-// Function that recursively searches files in the specified directory
-int search_dir (char buf[], char to_send[][PATH], int count) {
-    // Structs and variables
-    DIR *dir = opendir(buf);
-    char file_path[PATH];
-    struct dirent *file_dir = readdir(dir);
-    struct stat statbuf;
-
-    while (file_dir != NULL) {
-        // Check if file_dir refers to a file starting with sendme_
-        if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0) {
-
-            // creating file_path string
-            strcpy(file_path, buf);
-            strcat(strcat(file_path, "/"), file_dir->d_name);
-
-            // retrieving file stats
-            if (stat(file_path, &statbuf) == -1)
-                errExit("Could not retrieve file stats");
-
-            // Check file size (4KB -> 4096)
-            if (statbuf.st_size <= 4096) {
-                // saving file_path
-                strcpy(to_send[count], file_path);
-                count++;
-            }
-        }
-
-        // check if file_dir refers to a directory
-        if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0) {
-            // creating file_path string
-            strcpy(file_path, buf);
-            strcat(strcat(file_path, "/"), file_dir->d_name);
-
-            // recursive call
-            count = search_dir(file_path, to_send, count);
-        }
-
-        file_dir = readdir(dir);
-    }
-
-    if (closedir(dir) == -1)
-        errExit("Error while closing directory");
-    
-    return count;
 }
 
 // function used to reset the default mask of the process
