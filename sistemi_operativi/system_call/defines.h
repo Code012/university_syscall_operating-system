@@ -16,6 +16,8 @@
 #include <sys/msg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <sys/wait.h>
 
 #define MAX_LENGTH_PATH 150
 #define MAX_FILES 100

@@ -62,7 +62,7 @@ int main(int argc, char * argv[]) {
     strcpy(shmpointer[0].fragment, "READY");
     semop_usr(semid, 4, 2);
 
-    //printf("Numeri di file letti dalla FIFO: %d\n", n_files);
+    printf("Numeri di file letti dalla FIFO: %d\n", n_files);
 
 
     // delete and free all IPC's
