@@ -50,10 +50,12 @@ int main(int argc, char * argv[]) {
      *****************/
 
     // try to obtain set id of semaphores
+    // 
     do {
         printf("Looking for the semaphore...\n\n");
-        semid = semget_usr(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
-        sleep(2);
+        semid = semget(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
+        if (semid == -1)
+            sleep(2);
     } while(semid == -1);
 
     // waiting for IPCs to be created
