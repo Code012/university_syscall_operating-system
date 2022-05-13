@@ -13,24 +13,29 @@
 #include <sys/shm.h>
 #include <stdio.h>
 
-int main(int argc, char * argv[]) {
-    //init variables
-    int semid;
-    int queue_id;
-    int fifo1_fd;
-    int fifo2_fd;
-    int shmem_id;
-    int n_files;    // files to read from FIFO
-    ssize_t num_read;
-    struct queue_msg *shmpointer;
-    union semun semarg;
+// Declaration of functions
+void sigHandler (int sig);
 
-    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem
-    unsigned short semarray[5] = {0, 0, 1, 1, 0};
+//init variables
+int semid;
+int queue_id;
+int fifo1_fd;
+int fifo2_fd;
+int shmem_id;
+int n_files;    // files to read from FIFO
+ssize_t num_read;
+struct queue_msg *shmpointer;
+union semun semarg;
+pid_t client_pid;
+
+int main(int argc, char * argv[]) {
+
+    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
+    unsigned short semarray[6] = {0, 0, 1, 1, 0, 1};
     semarg.array = semarray;
 
     // creation of all the semaphores
-    semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    semid = semget_usr(ftok("client_0", 'a'), 6, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
@@ -52,31 +57,59 @@ int main(int argc, char * argv[]) {
     fifo1_fd = open_fifo("FIFO1", O_RDONLY);
     fifo2_fd = open_fifo("FIFO2", O_RDONLY);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
-    
-    // lock first semaphore until n_files are receveid via FIFO1
-    semop_usr(semid, 1, -1);
 
-    // retrieve n_files from FIFO1
-    read_fifo(fifo1_fd, &n_files, sizeof(int));
+    // Set sigHandler as a handler for the SIGINT
+    if (signal(SIGINT, sigHandler) == SIG_ERR)
+            errExit("change signal handler (SIGINT) failed!");
 
-    strcpy(shmpointer[0].fragment, "READY");
-    semop_usr(semid, 4, 2);
+    while(1){
 
-    printf("Numeri di file letti dalla FIFO: %d\n", n_files);
+        // reset all the semaphores to restart the cicle
+        if (semctl(semid, 0, SETALL, semarg) == -1)
+            errExit("Error while initializing semaphore set");
 
+        // lock first semaphore until the number of files are written on FIFO1
+        printf("Waiting for client...\n");
+        semop_usr(semid, 1, -1);
 
-    // delete and free all IPC's
-    close(fifo1_fd);
-    close(fifo2_fd);
-    free_shared_memory(shmpointer);
+        // retrieve n_files from FIFO1
+        read_fifo(fifo1_fd, &n_files, sizeof(int));
+        read_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
-    unlink("FIFO1");
-    unlink("FIFO2");
-    if(msgctl(queue_id, IPC_RMID, NULL) == -1)
-        errExit("Error while removing the message queue");
-    if(semctl(semid, 0, IPC_RMID, NULL) == -1)
-        errExit("Error while removing the message queue");
-    remove_shared_memory(shmem_id);
+        strcpy(shmpointer[0].fragment, "READY");
+        semop_usr(semid, 4, 2);
 
-    return 0;
+        printf("Numeri di file letti dalla FIFO: %d\n", n_files);
+
+        //Wait for client to finish
+        semop_usr(semid, 5, 0);
+    }
 }
+
+void sigHandler (int sig) {
+    // when SIGINT is caught, close everything and send SIGUSR1 to client
+    if(sig == SIGINT) {
+        
+        /**************
+        * CLOSE IPCs *
+        **************/ 
+        close(fifo1_fd);
+        close(fifo2_fd);
+        free_shared_memory(shmpointer);
+
+        unlink("FIFO1");
+        unlink("FIFO2");
+        if(msgctl(queue_id, IPC_RMID, NULL) == -1)
+            errExit("Error while removing the message queue");
+        if(semctl(semid, 0, IPC_RMID, NULL) == -1)
+            errExit("Error while removing the message queue");
+        remove_shared_memory(shmem_id);
+
+        if(kill(client_pid, SIGUSR1) == -1){
+            errExit("Error while sending SIGUSR1 to server");
+        }
+
+        exit(0);
+    }
+}
+
