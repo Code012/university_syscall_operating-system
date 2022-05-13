@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
     semarg.array = semarray;
 
     // creation of all the semaphores
-    semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    semid = semget_usr(ftok("client_0", 'a'), 5, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");

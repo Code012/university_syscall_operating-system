@@ -119,14 +119,26 @@ int main(int argc, char * argv[]) {
         errExit("Corrupted start message");
     }
 
+    semop_usr(semid, 0, count);
+
+    //Child creation, parent operations
     for(i = 0; i < count && pid != 0; i++){
         pid = fork();
         if(pid == -1)
             errExit("Error while forking");
     }
 
+    //child operations
     if(pid == 0){
-        printf("%d\n", i);
+        /*
+        printf("sem: %d, count: %d\n", semctl(semid, 0, GETVAL), count);
+        printf("Errno: %d", errno);
+        semop_usr(semid, 0, -1);
+        printf("%d, waiting to go\n", i);
+        semop_usr(semid, 0, 0);
+        printf("%d, go!\n", i);
+        */
+        printf("sem: %d", semctl(semid, 0, GETVAL));
         exit(0);
     } else{
 
