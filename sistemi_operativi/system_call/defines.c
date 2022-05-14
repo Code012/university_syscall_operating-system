@@ -11,10 +11,10 @@ void check_malloc (void *pointer) {
 }
 
 // Function that recursively searches files in the specified directory
-int search_dir (char buf[], char to_send[][PATH], int count) {
+int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
-    char file_path[PATH];
+    char file_path[MAX_LENGTH_PATH];
     struct dirent *file_dir = readdir(dir);
     struct stat statbuf;
 
