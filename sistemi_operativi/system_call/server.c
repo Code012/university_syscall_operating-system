@@ -27,8 +27,12 @@ ssize_t num_read;
 struct queue_msg *shmpointer;
 union semun semarg;
 pid_t client_pid;
+int opened;
+
 
 int main(int argc, char * argv[]) {
+    // set flag to zero (never say never)
+    opened = 0;
 
     // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
     unsigned short semarray[6] = {0, 0, 1, 1, 0, 1};
@@ -53,16 +57,19 @@ int main(int argc, char * argv[]) {
     // unlocking semaphore 0 (all IPCs have been created)
     semop_usr(semid, 0, 1);
 
+    // set sigHandler as a handler for the SIGINT
+    if (signal(SIGINT, sigHandler) == SIG_ERR)
+            errExit("change signal handler (SIGINT) failed!");
+
     // opening and attaching all of the IPC
     fifo1_fd = open_fifo("FIFO1", O_RDONLY);
     fifo2_fd = open_fifo("FIFO2", O_RDONLY);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
-    // Set sigHandler as a handler for the SIGINT
-    if (signal(SIGINT, sigHandler) == SIG_ERR)
-            errExit("change signal handler (SIGINT) failed!");
+    // set flag to one
+    opened = 1;
 
-    while(1){
+    while(1) {
 
         // reset all the semaphores to restart the cicle
         if (semctl(semid, 0, SETALL, semarg) == -1)
@@ -89,13 +96,14 @@ int main(int argc, char * argv[]) {
 void sigHandler (int sig) {
     // when SIGINT is caught, close everything and send SIGUSR1 to client
     if(sig == SIGINT) {
-        
-        /**************
-        * CLOSE IPCs *
-        **************/ 
-        close(fifo1_fd);
-        close(fifo2_fd);
-        free_shared_memory(shmpointer);
+        printf("\nShutdown server...\n");
+
+        if (opened) {
+            // close IPCs
+            close(fifo1_fd);
+            close(fifo2_fd);
+            free_shared_memory(shmpointer);
+        }
 
         unlink("FIFO1");
         unlink("FIFO2");
@@ -105,11 +113,10 @@ void sigHandler (int sig) {
             errExit("Error while removing the message queue");
         remove_shared_memory(shmem_id);
 
-        if(kill(client_pid, SIGUSR1) == -1){
+        // send SIGUSR1 to terminate client_0
+        if(kill(client_pid, SIGUSR1) == -1)
             errExit("Error while sending SIGUSR1 to server");
-        }
 
         exit(0);
     }
 }
-

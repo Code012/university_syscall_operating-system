@@ -21,7 +21,6 @@
 
 #define MAX_LENGTH_PATH 150
 #define MAX_FILES 100
-#define PATH 150
 
 // the my_msg structure defines a file fregment sent by a client
 struct queue_msg {
@@ -33,7 +32,7 @@ struct queue_msg {
 };
 
 void check_malloc (void *pointer);
-int search_dir (char buf[], char to_send[][PATH], int count);
+int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count);
 
 /*
 struct general_msg {
