@@ -16,6 +16,8 @@ sigset_t blocked_set_signals;
 void sigHandler(int sig);
 void set_original_mask();
 void create_signal_mask();
+
+// global variables
 int fifo1_fd;
 int fifo2_fd;
 int queue_id;
@@ -24,14 +26,19 @@ struct queue_msg *shmpointer;
 pid_t client_pid;
 
 int main(int argc, char * argv[]) {
-
+    
     // Init variables
     int semid;
     pid_t pid = 1;
     int i;
-    client_pid = getpid();              // get the current pid to send to server
-    int count = 0;                      // file found counter
-    char to_send[MAX_FILES][PATH];      // Creating an array to store the file paths
+    client_pid = getpid();                          // get the current pid to send to server
+    int count = 0;                                  // file found counter
+    char to_send[MAX_FILES][MAX_LENGTH_PATH];       // creating a matrix to store the file paths
+    char buf[MAX_LENGTH_PATH];                      // creating an array to store current directory
+
+
+
+
 
     /**************
      * CHECK ARGS *
@@ -42,43 +49,62 @@ int main(int argc, char * argv[]) {
     
     // pointer to the inserted path
     char *path_to_dir = argv[1];
-    char buf[PATH];
 
     // try to obtain set id of semaphores
-    // if the client is unable to find it, we leave the original masks so the user could kill the process with a ctrl + c 
+    // if the client is unable to find it,
+    // we leave the original masks so the user could kill the process with a CTRL + C
     do {
         printf("Looking for the semaphore...\n\n");
         semid = semget(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR);
         if (errno == ENOENT)
             sleep(2);
-        else if(semid == -1){
-            errExit("Error while retrieving the semaphore");
-        }
+        else
+            if(semid == -1)
+                errExit("Error while retrieving the semaphore");
     } while(semid == -1);
 
+    // invoke fun to create new set of masks
     create_signal_mask();
+
+    // waiting for IPCs to be created
+    semop_usr(semid, 0, -1);
+
+    // definition manipulate SIGINT
+    if (signal(SIGINT, sigHandler) == SIG_ERR)
+        errExit("change signal handler (SIGINT) failed!");
+
+    // definition manipulate SIGUSR1
+    if (signal(SIGUSR1, sigHandler) == SIG_ERR)
+        errExit("change signal handler (SIGUSR1) failed!");
+
+
+
+
 
     /*****************
      * OBTAINING IDs *
      *****************/
-
-    // waiting for IPCs to be created
-    semop_usr(semid, 0, -1);
     
-    // opening of all the IPC's
     fifo1_fd = open_fifo("FIFO1", O_WRONLY);
     fifo2_fd = open_fifo("FIFO2", O_WRONLY);
     queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
+
+
+
+
+    /*************
+     * MAIN LOOP *
+     *************/
+    
     // change process working directory
     if (chdir(path_to_dir) == -1)
         errExit("Error while changing directory");
 
-    while(1){      
-
-        // Set the count to 0 everytime so the recursive function works allright
+    while(1) {
+        // set the count to 0 everytime so the recursive function works alright
         count = 0;
 
         // blocking all signals except:
@@ -86,14 +112,6 @@ int main(int argc, char * argv[]) {
         // SIGINT, SIGUSR1
         if(sigprocmask(SIG_SETMASK, &unlocked_set_signals, NULL) == -1)
             errExit("sigprocmask(new_set) failed!");
-        
-        // definition manipulate SIGINT
-        if (signal(SIGINT, sigHandler) == SIG_ERR)
-            errExit("change signal handler (SIGINT) failed!");
-
-        // definition manipulate SIGUSR1
-        if (signal(SIGUSR1, sigHandler) == SIG_ERR)
-            errExit("change signal handler (SIGUSR1) failed!");
 
         printf("Ready to go! press ctrl + c\n");
 
@@ -103,6 +121,10 @@ int main(int argc, char * argv[]) {
         // blocking all blockable signals
         if(sigprocmask(SIG_SETMASK, &blocked_set_signals, NULL) == -1)
             errExit("sigprocmask(original_set) failed");
+
+
+
+
 
         /****************
          * FILE READING *
@@ -117,49 +139,53 @@ int main(int argc, char * argv[]) {
         count = search_dir (buf, to_send, count);
 
 
+
+
+
         /*******************************
          * CLIENT-SERVER COMMUNICATION *
          *******************************/
 
-        // Writing n_files on FIFO1
+        // writing n_files on FIFO1
         write_fifo(fifo1_fd, &count, sizeof(count));
         write_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
-        // Unlocking semaphore 1 (allow server to read from FIFO1)
+        // unlocking semaphore 1 (allow server to read from FIFO1)
         semop_usr(semid, 1, 1);
 
-        //Wait for server to send "READY", 
-        //waiting ShdMem semaphore unlock by server 
+        // wait for server to send "READY", 
+        // waiting ShdMem semaphore unlock by server 
         semop_usr(semid, 4, -1);
 
-        if(strcmp(shmpointer[0].fragment, "READY") != 0){
+        if(strcmp(shmpointer[0].fragment, "READY") != 0)
             errExit("Corrupted start message");
-        }
 
+        // initialize sem 0 to count (number of files)
         semop_usr(semid, 0, count);
 
-        //Child creation, parent operations
-        for(i = 0; i < count && pid != 0; i++){
-            pid = fork();
-            if(pid == -1)
+        // child creation, parent operations
+        for(i = 0; i < count && pid != 0; i++) {
+            if((pid = fork()) == -1)
                 errExit("Error while forking");
         }
 
-        //child operations
-        if(pid == 0){
+        // child operations
+        if(pid == 0) {
+            // lowering sem 0
             semop_usr(semid, 0, -1);
+            // block child until sem 0 is == 0
             semop_usr(semid, 0, 0);
-            exit(0);
-        } else{
 
-            // Waiting for all child to terminate
+            exit(0);
+        } else {
+            // waiting for all child to terminate
             for(int j = 0; j < count; j++){
                 if(wait(NULL) == -1)
                     errExit("Error while waiting for children");
             }
         }
 
-        // Let the server know that we are done
+        // let the server know that we are done
         semop_usr(semid, 5, -1);
     }
 
@@ -169,7 +195,7 @@ int main(int argc, char * argv[]) {
 
 
 
-// gimmy attento che qui finisce la main!!!
+// GIMMY attento che qui finisce la main!!!
 
 
 
@@ -182,15 +208,15 @@ int main(int argc, char * argv[]) {
 void sigHandler (int sig) {
     // if signal is SIGUSR1, set original mask and kill process
     if(sig == SIGUSR1) {
+        printf("\nShutdown client_0...\n");
+
         set_original_mask();
 
-        /**************
-        * CLOSE IPCs *
-        **************/ 
-
+        // close IPCs
         close(fifo1_fd);
         close(fifo2_fd);
         free_shared_memory(shmpointer);
+
         exit(0);
     }
 
@@ -199,7 +225,7 @@ void sigHandler (int sig) {
         printf("\n\nI'm awake!\n\n");
 }
 
-// function used to reset the default mask of the process
+// Function used to reset the default mask of the process
 void set_original_mask() {
     // reset the signal mask of the process = restore original mask
     if(sigprocmask(SIG_SETMASK, &original_set_signals, NULL) == -1)
@@ -207,8 +233,7 @@ void set_original_mask() {
 }
 
 void create_signal_mask() {
-
-    // Initialize a set with all the signals
+    // initialize a set with all the signals
     if(sigfillset(&blocked_set_signals) == -1)
         errExit("sigfillset failed!");
 
@@ -219,11 +244,12 @@ void create_signal_mask() {
     // remove SIGINT from unlocked_set_signals
     if(sigdelset(&unlocked_set_signals, SIGINT) == -1)
         errExit("sigdelset(SIGINT) failed!");
+    
     // remove SIGUSR1 from unlocked_set_signals
     if(sigdelset(&unlocked_set_signals, SIGUSR1) == -1)
         errExit("sigdelset(SIGUSR1) failed!");
     
+    // set new mask (unlocked_set_signals) and save old mask (original_set_signals)
     if(sigprocmask(SIG_SETMASK, &unlocked_set_signals, &original_set_signals) == -1)
-        errExit("sigprocmask(new_set) failed!");
-    
+        errExit("sigprocmask(new_set) failed!");   
 }
