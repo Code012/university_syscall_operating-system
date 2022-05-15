@@ -210,12 +210,14 @@ int main(int argc, char * argv[]) {
                     break;
             }
 
+            printf("Il path e dim: %s, %ld\n", to_send[child_num - 1], statbuf.st_size);
+
             // open files
-            file_descriptor = open(to_send[child_num], O_RDONLY);
+            file_descriptor = open(to_send[child_num - 1], O_RDONLY);
             if (file_descriptor == -1)
                 errExit("Error while opening file");
 
-            printf("Il path e dim: %s, %ld\n", to_send[child_num], statbuf.st_size);
+            
             for (int j = 0; j < 4; j++)
             {
                 if(read(file_descriptor, char_to_read[j], files_dim[j]) == -1)
