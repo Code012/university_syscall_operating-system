@@ -5,6 +5,7 @@
 #include "err_exit.h"
 #include "semaphore.h"
 
+
 int semget_usr (key_t key, int nsems, int flags){
     int semid = semget(key, nsems, flags);
 
@@ -15,9 +16,7 @@ int semget_usr (key_t key, int nsems, int flags){
 }
 
 void semop_usr (int semid, unsigned short sem_num, short sem_op) {
-    // initialize the struct to check value 0 of a semaphore (flag 0)
-    // if the value of semaphore isn't zero,
-    // the process will block until the semaphore = 0
+    // initialize the struct
     struct sembuf sop = {
         .sem_num = sem_num,
         .sem_op = sem_op,
@@ -27,4 +26,22 @@ void semop_usr (int semid, unsigned short sem_num, short sem_op) {
     // open a semaphore
     if(semop(semid, &sop, 1) == -1)
         errExit("semop failed");
+}
+
+void semop_nowait (int semid, unsigned short sem_num, short sem_op) {
+    // initialize the struct with flag = IPC_NOWAIT
+    struct sembuf sop = {
+        .sem_num = sem_num,
+        .sem_op = sem_op,
+        .sem_flg = IPC_NOWAIT
+    };
+    
+    errno = 0;
+
+    // open a semaphore
+    semop(semid, &sop, 1);
+
+    // check errors
+    if(errno != EAGAIN && errno != 0)
+        errExit("semop nowait failed");
 }

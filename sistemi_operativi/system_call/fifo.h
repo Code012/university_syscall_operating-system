@@ -19,3 +19,6 @@ ssize_t read_fifo (int fd, void *buf, ssize_t bytes_to_read);
 // Write on fifo or
 // terminate process if there is an error
 void write_fifo (int fd, void *buf, ssize_t bytes_to_read);
+
+// Close fifo and check errors
+void close_fifo (int fifo_fd);
