@@ -21,6 +21,12 @@
 
 #define MAX_LENGTH_PATH 150
 #define MAX_FILES 100
+#define ACCESS 0
+#define FIFO1 1
+#define FIFO2 2
+#define MSGQUEUE 3
+#define SHDMEM 4
+#define FINISH 5
 
 // the my_msg structure defines a file fregment sent by a client
 struct queue_msg {

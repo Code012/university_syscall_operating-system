@@ -55,7 +55,7 @@ int main(int argc, char * argv[]) {
                                     IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     // unlocking semaphore 0 (all IPCs have been created)
-    semop_usr(semid, 0, 1);
+    semop_usr(semid, ACCESS, 1);
 
     // set sigHandler as a handler for the SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
@@ -77,19 +77,19 @@ int main(int argc, char * argv[]) {
 
         // lock first semaphore until the number of files are written on FIFO1
         printf("Waiting for client...\n");
-        semop_usr(semid, 1, -1);
+        semop_usr(semid, FIFO1, -1);
 
         // retrieve n_files from FIFO1
         read_fifo(fifo1_fd, &n_files, sizeof(int));
         read_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
         strcpy(shmpointer[0].fragment, "READY");
-        semop_usr(semid, 4, 2);
+        semop_usr(semid, SHDMEM, 2);
 
         printf("Numeri di file letti dalla FIFO: %d\n", n_files);
 
         //Wait for client to finish
-        semop_usr(semid, 5, 0);
+        semop_usr(semid, FINISH, 0);
     }
 }
 
@@ -100,8 +100,8 @@ void sigHandler (int sig) {
 
         if (opened) {
             // close IPCs
-            close(fifo1_fd);
-            close(fifo2_fd);
+            close_fifo(fifo1_fd);
+            close_fifo(fifo2_fd);
             free_shared_memory(shmpointer);
         }
 

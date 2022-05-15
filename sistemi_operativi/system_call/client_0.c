@@ -30,11 +30,15 @@ int main(int argc, char * argv[]) {
     // Init variables
     int semid;
     pid_t pid = 1;
-    int i;
+    int child_num;
     client_pid = getpid();                          // get the current pid to send to server
     int count = 0;                                  // file found counter
     char to_send[MAX_FILES][MAX_LENGTH_PATH];       // creating a matrix to store the file paths
     char buf[MAX_LENGTH_PATH];                      // creating an array to store current directory
+    struct stat statbuf;
+    int files_dim[4] = {0};
+    int file_descriptor;
+    char char_to_read[4][1025];
 
 
 
@@ -67,7 +71,7 @@ int main(int argc, char * argv[]) {
     create_signal_mask();
 
     // waiting for IPCs to be created
-    semop_usr(semid, 0, -1);
+    semop_usr(semid, ACCESS, -1);
 
     // definition manipulate SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
@@ -151,30 +155,121 @@ int main(int argc, char * argv[]) {
         write_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
         // unlocking semaphore 1 (allow server to read from FIFO1)
-        semop_usr(semid, 1, 1);
+        semop_usr(semid, FIFO1, 1);
 
         // wait for server to send "READY", 
         // waiting ShdMem semaphore unlock by server 
-        semop_usr(semid, 4, -1);
+        semop_usr(semid, SHDMEM, -1);
 
         if(strcmp(shmpointer[0].fragment, "READY") != 0)
             errExit("Corrupted start message");
 
         // initialize sem 0 to count (number of files)
-        semop_usr(semid, 0, count);
+        semop_usr(semid, ACCESS, count);
 
         // child creation, parent operations
-        for(i = 0; i < count && pid != 0; i++) {
+        for(child_num = 0; child_num < count && pid != 0; child_num++) {
             if((pid = fork()) == -1)
                 errExit("Error while forking");
         }
 
         // child operations
         if(pid == 0) {
+            // retrieving file stats
+            if (stat(to_send[child_num - 1], &statbuf) == -1)
+                errExit("Could not retrieve file stats");
+
+            // splitting files
+            switch (statbuf.st_size)
+            {
+                case 1:
+                    files_dim[0] = 1;
+                    break;
+                
+                case 2:
+                    files_dim[0] = 1;
+                    files_dim[1] = 1;
+                    break;
+
+                case 5:
+                    files_dim[0] = 2;
+                    for (int j = 1; j < 4; j++)
+                        files_dim[j] = 1;
+                    break;
+
+                default:
+                    if (statbuf.st_size % 4 == 0)
+                        for (int j = 0; j < 4; j++)
+                            files_dim[j] = statbuf.st_size / 4;
+                    else {
+                        for (int j = 0; j < 3; j++)
+                            files_dim[j] = (statbuf.st_size / 4) + 1;
+
+                        files_dim[3] = statbuf.st_size - (((statbuf.st_size / 4) + 1) * 3);
+                    }
+                    break;
+            }
+
+            // open files
+            file_descriptor = open(to_send[child_num], O_RDONLY);
+            if (file_descriptor == -1)
+                errExit("Error while opening file");
+
+            printf("Il path e dim: %s, %ld\n", to_send[child_num], statbuf.st_size);
+            for (int j = 0; j < 4; j++)
+            {
+                if(read(file_descriptor, char_to_read[j], files_dim[j]) == -1)
+                    errExit("Error while reading file");
+                
+                char_to_read[j][files_dim[j]] = '\0';
+                
+                // printf("Il path è: %s", )
+                printf("La stringa %d del processo %d: %s\n", j,  child_num, char_to_read[j]);
+            }
+
+            printf("\n\n");
+            
+
             // lowering sem 0
-            semop_usr(semid, 0, -1);
+            semop_usr(semid, ACCESS, -1);
             // block child until sem 0 is == 0
-            semop_usr(semid, 0, 0);
+            semop_usr(semid, ACCESS, 0);
+
+            /*
+            for (int j = 0, arr_flag[4] = {0}; j < 4;) {
+                if (arr_flag[0] == 0) {
+                    semop_nowait(semid, FIFO1, -1);
+                    if (errno == 0) {
+                        arr_flag[0] = 1;
+                        j ++;
+                    }
+                }
+
+                if (arr_flag[1] == 0) {
+                    semop_nowait(semid, FIFO2, -1);
+                    if (errno == 0) {
+                        arr_flag[1] = 1;
+                        j ++;
+                    }
+                }
+
+                if (arr_flag[2] == 0) {
+                    semop_nowait(semid, MSGQUEUE, -1);
+                    if (errno == 0) {
+                        arr_flag[2] = 1;
+                        j ++;
+                    }
+                }
+
+                if (arr_flag[3] == 0) {
+                    semop_nowait(semid, SHDMEM, -1);
+                    //if (errno == 0) {
+                    //  arr_flag[3] = 1;
+                    //  j ++;
+                    //}
+                }
+            }
+            */
 
             exit(0);
         } else {
@@ -186,7 +281,7 @@ int main(int argc, char * argv[]) {
         }
 
         // let the server know that we are done
-        semop_usr(semid, 5, -1);
+        semop_usr(semid, FINISH, -1);
     }
 
     return 0;
@@ -213,8 +308,8 @@ void sigHandler (int sig) {
         set_original_mask();
 
         // close IPCs
-        close(fifo1_fd);
-        close(fifo2_fd);
+        close_fifo(fifo1_fd);
+        close_fifo(fifo2_fd);
         free_shared_memory(shmpointer);
 
         exit(0);

@@ -48,3 +48,8 @@ void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {
     if (char_write != bytes_to_write)
         errExit("broken fifo while writing error!");
 }
+
+void close_fifo (int fifo_fd) {
+    if(close(fifo_fd) == -1)
+        errExit("Error while closing fifo");
+}
