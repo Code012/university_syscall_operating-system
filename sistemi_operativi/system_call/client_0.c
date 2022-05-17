@@ -275,10 +275,10 @@ int main(int argc, char * argv[]) {
                 if (arr_flag[2] == 0) {
                     semop_nowait(semid, MSGQUEUE, -1);
                     if (errno == 0) {
-                        packet = init_struct(0, getpid(), to_send[child_num - 1], char_to_read[2]);
+                        packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[2]);
                         errno = 0;
 
-                        msgsnd(queue_id, &packet, sizeof(packet), IPC_NOWAIT);
+                        msgsnd(queue_id, &packet, sizeof(packet) - sizeof(long), IPC_NOWAIT);
                         //if everything goes well: go on! else: NOOP
                         if(errno == 0){
                             arr_flag[2] = 1;
