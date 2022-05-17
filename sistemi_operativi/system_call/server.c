@@ -47,9 +47,6 @@ int main(int argc, char * argv[]) {
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
 
-    semarray[0] = 1;
-    semarg.array = semarray;
-
     // creation of all IPC's
     create_fifo("FIFO1");
     create_fifo("FIFO2");
@@ -70,7 +67,10 @@ int main(int argc, char * argv[]) {
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
     // unlocking semaphore ACCESS (all IPCs have been created)
-    // semop_usr(semid, ACCESS, 1);
+    semop_usr(semid, ACCESS, 1);
+
+    // wait for client to open IPCs
+    semop_usr(semid, FINISH, -2);
 
     // set flag to one
     opened = 1;

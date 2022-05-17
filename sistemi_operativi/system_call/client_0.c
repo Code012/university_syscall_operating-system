@@ -97,6 +97,9 @@ int main(int argc, char * argv[]) {
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
+    // Unlocking finish (IPCs opened)
+    semop_usr(semid, FINISH, 2);
+
 
 
 
@@ -157,7 +160,7 @@ int main(int argc, char * argv[]) {
         write_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
         // unlocking semaphore 1 (allow server to read from FIFO1)
-        semop_usr(semid, FIFO1, 1);
+        semop_usr(semid, FIFO1, 2);
 
         // wait for server to send "READY", 
         // waiting ShdMem semaphore unlock by server 
@@ -228,7 +231,7 @@ int main(int argc, char * argv[]) {
                 char_to_read[j][files_dim[j]] = '\0';
                 
                 // printf("Il path è: %s", )
-                //printf("La stringa %d del processo %d: %s\n", j,  child_num, char_to_read[j]);
+                // printf("La stringa %d del processo %d: %s\n", j,  child_num, char_to_read[j]);
             }
 
             //printf("\n\n");
