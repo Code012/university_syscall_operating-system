@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>     
 #include <stdio.h>
+#include <sys/errno.h>
 #include "err_exit.h"
 #include "fifo.h"
 
@@ -39,14 +40,19 @@ ssize_t read_fifo (int fd, void *buf, ssize_t bytes_to_read) {
 }
 
 void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {
+    errno = 0;
+
     ssize_t char_write = write(fd, buf, bytes_to_write); 
 
-    if (char_write == -1)
-        errExit("write_fifo failed!");
-
     // check if write was succesfull
+    if(errno == EAGAIN || errno == EWOULDBLOCK)
+        return;
+
     if (char_write != bytes_to_write)
         errExit("broken fifo while writing error!");
+    
+    if (char_write == -1)
+        errExit("write_fifo failed!");
 }
 
 void close_fifo (int fifo_fd) {
