@@ -31,6 +31,9 @@ int opened;
 
 
 int main(int argc, char * argv[]) {
+
+    struct queue_msg packet;
+
     // set flag to zero (never say never)
     opened = 0;
 
@@ -54,17 +57,17 @@ int main(int argc, char * argv[]) {
                                     sizeof(struct queue_msg) * 50,
                                     IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
-    // unlocking semaphore 0 (all IPCs have been created)
-    semop_usr(semid, ACCESS, 1);
-
     // set sigHandler as a handler for the SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
             errExit("change signal handler (SIGINT) failed!");
 
     // opening and attaching all of the IPC
-    fifo1_fd = open_fifo("FIFO1", O_RDONLY);
-    fifo2_fd = open_fifo("FIFO2", O_RDONLY);
+    fifo1_fd = open_fifo("FIFO1", O_RDONLY | O_NONBLOCK);
+    fifo2_fd = open_fifo("FIFO2", O_RDONLY | O_NONBLOCK);
+        semop_usr(semid, ACCESS, 1);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
+
+    // unlocking semaphore ACCESS (all IPCs have been created)
 
     // set flag to one
     opened = 1;
@@ -79,14 +82,26 @@ int main(int argc, char * argv[]) {
         printf("Waiting for client...\n");
         semop_usr(semid, FIFO1, -1);
 
-        // retrieve n_files from FIFO1
+        // retrieve n_files from FIFO1 and then retrieve client PID
         read_fifo(fifo1_fd, &n_files, sizeof(int));
         read_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
         strcpy(shmpointer[0].fragment, "READY");
         semop_usr(semid, SHDMEM, 2);
 
-        printf("Numeri di file letti dalla FIFO: %d\n", n_files);
+        printf("Numeri di file da elaborare: %d\n", n_files);
+
+        for(int i = 0; i < n_files * 4; ){
+            read_fifo(fifo1_fd, &packet, sizeof(struct queue_msg));
+            printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
+            read_fifo(fifo2_fd, &packet, sizeof(struct queue_msg));
+            printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
+            msgrcv(queue_id, &packet, sizeof(struct queue_msg), 0, IPC_NOWAIT);
+            printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
+        }
 
         //Wait for client to finish
         semop_usr(semid, FINISH, 0);
