@@ -1,0 +1,8 @@
+// Restituisce tutti i comandi
+
+apropos write
+
+
+// Restituisce l'errore
+
+errno 11
