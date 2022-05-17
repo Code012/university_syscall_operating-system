@@ -91,9 +91,7 @@ int main(int argc, char * argv[]) {
     /*****************
      * OBTAINING IDs *
      *****************/
-    printf("A\n");
     fifo1_fd = open_fifo("FIFO1", O_WRONLY | O_NONBLOCK);
-    printf("A\n");
     fifo2_fd = open_fifo("FIFO2", O_WRONLY | O_NONBLOCK);
     queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
@@ -246,8 +244,8 @@ int main(int argc, char * argv[]) {
                 if (arr_flag[0] == 0) {
                     semop_nowait(semid, FIFO1, -1);
                     if (errno == 0) {
-                        packet = init_struct(0, getpid(), to_send[child_num], char_to_read[0]);
-                        write_fifo(fifo1_fd, &packet, sizeof(struct queue_msg));
+                        packet = init_struct(0, getpid(), to_send[child_num - 1], char_to_read[0]);
+                        write_fifo(fifo1_fd, &packet, sizeof(packet));
 
                         //if everything went well:
                         if(errno == 0){
@@ -260,8 +258,8 @@ int main(int argc, char * argv[]) {
                 if (arr_flag[1] == 0) {
                     semop_nowait(semid, FIFO2, -1);
                     if (errno == 0) {
-                        packet = init_struct(0, getpid(), to_send[child_num], char_to_read[1]);
-                        write_fifo(fifo2_fd, &packet, sizeof(struct queue_msg));
+                        packet = init_struct(0, getpid(), to_send[child_num - 1], char_to_read[1]);
+                        write_fifo(fifo2_fd, &packet, sizeof(packet));
 
                         //if everything went well:
                         if(errno == 0){
@@ -274,10 +272,10 @@ int main(int argc, char * argv[]) {
                 if (arr_flag[2] == 0) {
                     semop_nowait(semid, MSGQUEUE, -1);
                     if (errno == 0) {
-                        packet = init_struct(0, getpid(), to_send[child_num], char_to_read[2]);
+                        packet = init_struct(0, getpid(), to_send[child_num - 1], char_to_read[2]);
                         errno = 0;
 
-                        msgsnd(queue_id, &packet, sizeof(struct queue_msg), IPC_NOWAIT);
+                        msgsnd(queue_id, &packet, sizeof(packet), IPC_NOWAIT);
                         //if everything goes well: go on! else: NOOP
                         if(errno == 0){
                             arr_flag[2] = 1;

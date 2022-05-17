@@ -47,6 +47,9 @@ int main(int argc, char * argv[]) {
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
 
+    semarray[0] = 1;
+    semarg.array = semarray;
+
     // creation of all IPC's
     create_fifo("FIFO1");
     create_fifo("FIFO2");
@@ -59,22 +62,22 @@ int main(int argc, char * argv[]) {
 
     // set sigHandler as a handler for the SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
-            errExit("change signal handler (SIGINT) failed!");
+        errExit("change signal handler (SIGINT) failed!");
 
     // opening and attaching all of the IPC
     fifo1_fd = open_fifo("FIFO1", O_RDONLY | O_NONBLOCK);
     fifo2_fd = open_fifo("FIFO2", O_RDONLY | O_NONBLOCK);
-        semop_usr(semid, ACCESS, 1);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
     // unlocking semaphore ACCESS (all IPCs have been created)
+    // semop_usr(semid, ACCESS, 1);
 
     // set flag to one
     opened = 1;
 
     while(1) {
 
-        // reset all the semaphores to restart the cicle
+        // reset all the semaphores to restart the cicle and unlock Access (all IPCs have been created)
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
@@ -92,13 +95,13 @@ int main(int argc, char * argv[]) {
         printf("Numeri di file da elaborare: %d\n", n_files);
 
         for(int i = 0; i < n_files * 4; ){
-            read_fifo(fifo1_fd, &packet, sizeof(struct queue_msg));
+            read_fifo(fifo1_fd, &packet, sizeof(packet));
             printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
 
-            read_fifo(fifo2_fd, &packet, sizeof(struct queue_msg));
+            read_fifo(fifo2_fd, &packet, sizeof(packet));
             printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
 
-            msgrcv(queue_id, &packet, sizeof(struct queue_msg), 0, IPC_NOWAIT);
+            msgrcv(queue_id, &packet, sizeof(packet), 0, IPC_NOWAIT);
             printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
 
         }
