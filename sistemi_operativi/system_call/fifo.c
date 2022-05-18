@@ -12,7 +12,7 @@
 #include "fifo.h"
 
 void create_fifo (const char *pathname) {
-    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR) == -1)
+    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR | O_NONBLOCK) == -1)
         errExit("mkfifo failed!");
 }
 
@@ -44,7 +44,7 @@ void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {
 
     ssize_t char_write = write(fd, buf, bytes_to_write); 
 
-    printf("%ld e %ld\n\n", char_write, bytes_to_write);
+    //printf("%ld e %ld\n\n", char_write, bytes_to_write);
 
     // check if write was succesfull
     if(errno == EAGAIN || errno == EWOULDBLOCK)
