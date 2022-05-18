@@ -243,11 +243,11 @@ int main(int argc, char * argv[]) {
             semop_usr(semid, ACCESS, 0);
 
             
-            for (int j = 0, arr_flag[4] = {0}; j < 4;) {
+            for (int j = 0, arr_flag[4] = {0} ; j < 4 ;) {
                 if (arr_flag[0] == 0) {
                     semop_nowait(semid, FIFO1, -1);
                     if (errno == 0) {
-                        packet = init_struct(0, getpid(), to_send[child_num - 1], char_to_read[0]);
+                        packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[0]);
                         write_fifo(fifo1_fd, &packet, sizeof(packet));
 
                         //if everything went well:
@@ -261,7 +261,7 @@ int main(int argc, char * argv[]) {
                 if (arr_flag[1] == 0) {
                     semop_nowait(semid, FIFO2, -1);
                     if (errno == 0) {
-                        packet = init_struct(0, getpid(), to_send[child_num - 1], char_to_read[1]);
+                        packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[1]);
                         write_fifo(fifo2_fd, &packet, sizeof(packet));
 
                         //if everything went well:
@@ -276,9 +276,11 @@ int main(int argc, char * argv[]) {
                     semop_nowait(semid, MSGQUEUE, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[2]);
+
                         errno = 0;
 
                         msgsnd(queue_id, &packet, sizeof(packet) - sizeof(long), IPC_NOWAIT);
+
                         //if everything goes well: go on! else: NOOP
                         if(errno == 0){
                             arr_flag[2] = 1;

@@ -26,17 +26,20 @@ int open_fifo (const char *pathname, int flags) {
     return fd;
 }
 
-ssize_t read_fifo (int fd, void *buf, ssize_t bytes_to_read) {
+void read_fifo (int fd, void *buf, ssize_t bytes_to_read) {
+    errno = 0;
+
     ssize_t char_read = read(fd, buf, bytes_to_read);
 
+    // check if write was succesfull
+    if(errno == EAGAIN || errno == EWOULDBLOCK)
+        return;
+
     if (char_read == -1)
-        errExit("read_fifo failed!");
+        errExit("write_fifo failed!");
 
-    // check if read was succesfull
-    if (char_read != bytes_to_read && char_read != 0)
-        errExit("broken fifo while reading error!");
-
-    return char_read;
+    if (char_read != bytes_to_read)
+        errExit("broken fifo while writing!");
 }
 
 void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {
@@ -44,7 +47,7 @@ void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {
 
     ssize_t char_write = write(fd, buf, bytes_to_write); 
 
-    printf("%ld e %ld\n\n", char_write, bytes_to_write);
+    //printf("%ld e %ld\n\n", char_write, bytes_to_write);
 
     // check if write was succesfull
     if(errno == EAGAIN || errno == EWOULDBLOCK)
