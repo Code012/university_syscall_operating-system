@@ -96,6 +96,9 @@ int main(int argc, char * argv[]) {
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
+    // Unlocking finish (IPCs opened)
+    semop_usr(semid, FINISH, 2);
+
 
 
 
@@ -156,7 +159,7 @@ int main(int argc, char * argv[]) {
         write_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
         // unlocking semaphore 1 (allow server to read from FIFO1)
-        semop_usr(semid, FIFO1, 1);
+        semop_usr(semid, FIFO1, 2);
 
         // wait for server to send "READY", 
         // waiting ShdMem semaphore unlock by server 
@@ -230,7 +233,7 @@ int main(int argc, char * argv[]) {
                 char_to_read[j][files_dim[j]] = '\0';
                 
                 // printf("Il path è: %s", )
-                //printf("La stringa %d del processo %d: %s\n", j,  child_num, char_to_read[j]);
+                // printf("La stringa %d del processo %d: %s\n", j,  child_num, char_to_read[j]);
             }
 
             //printf("\n\n");
@@ -243,9 +246,8 @@ int main(int argc, char * argv[]) {
             // block child until sem 0 is == 0
             semop_usr(semid, ACCESS, 0);
 
-            for (int j = 0, arr_flag[4] = {0}; j < 3;) {
-                //printf("Qui\n");
-                //printf("Val: %d\n", semctl(semid, FIFO1, GETVAL));
+
+            for (int j = 0, arr_flag[4] = {0} ; j < 4 ;) {
                 if (arr_flag[0] == 0) {
                     //semop_nowait(semid, FIFO1, -1);
                     if (errno == 0) {
@@ -290,9 +292,11 @@ int main(int argc, char * argv[]) {
                     //semop_nowait(semid, MSGQUEUE, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[2]);
+                      
                         errno = 0;
 
-                        msgsnd(queue_id, &packet, sizeof(packet), IPC_NOWAIT);
+                        msgsnd(queue_id, &packet, sizeof(packet) - sizeof(long), IPC_NOWAIT);
+
                         //if everything goes well: go on! else: NOOP
                         if(errno == 0){
                             arr_flag[2] = 1;

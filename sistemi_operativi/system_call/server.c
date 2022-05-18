@@ -8,6 +8,7 @@
 #include "fifo.h"
 #include <sys/msg.h>
 #include <sys/stat.h>
+#include <sys/errno.h>
 #include <unistd.h>
 #include <fcntl.h> 
 #include <sys/shm.h>
@@ -47,10 +48,6 @@ int main(int argc, char * argv[]) {
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
 
-    // set array value 1, index 0 (ACCESS)
-    semarray[ACCESS] = 1;
-    semarg.array = semarray;
-
     // creation of all IPC's
     create_fifo("FIFO1");
     create_fifo("FIFO2");
@@ -71,6 +68,11 @@ int main(int argc, char * argv[]) {
     // unlocking semaphore ACCESS (all IPCs have been created)
     semop_usr(semid, ACCESS, 1);
 
+    printf("\nServer ready!\n");
+
+    // wait for client to open IPCs
+    semop_usr(semid, FINISH, -2);
+
     // set flag to one
     opened = 1;
 
@@ -83,7 +85,7 @@ int main(int argc, char * argv[]) {
             errExit("Error while initializing semaphore set");
 
         // lock first semaphore until the number of files are written on FIFO1
-        printf("Waiting for client...\n");
+        printf("\nWaiting for client...\n\n");
         semop_usr(semid, FIFO1, -1);
         semop_usr(semid, FIFO1, 1);
 
@@ -97,42 +99,32 @@ int main(int argc, char * argv[]) {
 
         printf("Numeri di file da elaborare: %d\n", n_files);
 
-        //semop_usr(semid, FINISH, 0);
-        for(int i = 0; i < n_files * 3; ) {
-            semop_usr(semid, FIFO1, 0);
-            /*if(semctl(semid, FIFO1, GETVAL) == 1)
-            {
-                read_fifo(fifo1_fd, &packet, sizeof(packet));
-                printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
-                i ++;
-            }*/
-            read_fifo(fifo1_fd, &packet, sizeof(packet));
-            printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
-            i ++;
-            semop_usr(semid, FIFO1, 1);
-            
-            semop_usr(semid, FIFO2, 0);
-            /*if(semctl(semid, FIFO2, GETVAL) == 1)
-            {
-                read_fifo(fifo2_fd, &packet, sizeof(packet));
-                printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
-                i ++;
-            }*/
-            read_fifo(fifo2_fd, &packet, sizeof(packet));
-            printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
-            i ++;
-            semop_usr(semid, FIFO2, 1);
+        for(int i = 0; i < n_files * 3; ){
 
-            semop_usr(semid, MSGQUEUE, 0);
-            /*if(semctl(semid, MSGQUEUE, GETVAL) == 1) {
-                msgrcv(queue_id, &packet, sizeof(packet), 0, IPC_NOWAIT);
-                printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
-                i ++;
-            }*/
+            read_fifo(fifo1_fd, &packet, sizeof(packet));
+            if (errno == 0) {
+                printf("FIFO1 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                semop_usr(semid, FIFO1, 1);
+                i++;
+            }
+
+            read_fifo(fifo2_fd, &packet, sizeof(packet));
+            if (errno == 0) {
+                printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                semop_usr(semid, FIFO2, 1);
+                i++;
+            }
+
+            errno = 0;
             msgrcv(queue_id, &packet, sizeof(packet), 0, IPC_NOWAIT);
-            printf("Process PID: %d, Message: %s\n", packet.pid, packet.fragment);
-            i ++;
-            semop_usr(semid, MSGQUEUE, 1);
+            if (errno == 0) {
+                printf("MSGQUEUE process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                semop_usr(semid, MSGQUEUE, 1);
+                i++;
+            }
+            else if (errno != ENOMSG) {
+                errExit("Error while receiving message");
+            }
         }
 
         //Wait for client to finish
