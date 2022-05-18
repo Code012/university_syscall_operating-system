@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) {
     int files_dim[4] = {0};
     int file_descriptor;
     char char_to_read[4][1025];
-    struct queue_msg packet;
+    struct queue_msg *packet;
     
 
 
@@ -248,7 +248,7 @@ int main(int argc, char * argv[]) {
                     semop_nowait(semid, FIFO1, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[0]);
-                        write_fifo(fifo1_fd, &packet, sizeof(packet));
+                        write_fifo(fifo1_fd, packet, sizeof(struct queue_msg));
 
                         //if everything went well:
                         if(errno == 0){
@@ -262,7 +262,7 @@ int main(int argc, char * argv[]) {
                     semop_nowait(semid, FIFO2, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[1]);
-                        write_fifo(fifo2_fd, &packet, sizeof(packet));
+                        write_fifo(fifo2_fd, packet, sizeof(struct queue_msg));
 
                         //if everything went well:
                         if(errno == 0){
@@ -279,7 +279,7 @@ int main(int argc, char * argv[]) {
 
                         errno = 0;
 
-                        msgsnd(queue_id, &packet, sizeof(packet) - sizeof(long), IPC_NOWAIT);
+                        msgsnd(queue_id, packet, sizeof(struct queue_msg) - sizeof(long), IPC_NOWAIT);
 
                         //if everything goes well: go on! else: NOOP
                         if(errno == 0){
