@@ -69,7 +69,7 @@ int main(int argc, char * argv[]) {
 
     // unlocking semaphore ACCESS (all IPCs have been created)
     semop_usr(semid, ACCESS, 1);
-
+                
     printf("\nServer ready!\n");
 
     // wait for client to open IPCs
