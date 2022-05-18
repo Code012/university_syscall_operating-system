@@ -51,12 +51,10 @@ int main(int argc, char * argv[]) {
     // creation of all IPC's
     create_fifo("FIFO1");
     create_fifo("FIFO2");
-    queue_id = msgget(ftok("client_0", 'a'), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    queue_id = msgget(ftok("client_0", 'a'), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | O_NONBLOCK);
     if(queue_id == -1)
         errExit("Error while creating a message queue");
-    shmem_id = alloc_shared_memory(ftok("client_0", 'a'),
-                                    sizeof(struct queue_msg) * 50,
-                                    IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     // set sigHandler as a handler for the SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
@@ -81,18 +79,22 @@ int main(int argc, char * argv[]) {
     while(1) {
 
         // reset all the semaphores to restart the cicle and unlock Access (all IPCs have been created)
+        // Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
+        // 1,      0,     1,     1,        0,      1
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
         // lock first semaphore until the number of files are written on FIFO1
         printf("\nWaiting for client...\n\n");
         semop_usr(semid, FIFO1, -1);
+        semop_usr(semid, FIFO1, 1);
 
         // retrieve n_files from FIFO1 and then retrieve client PID
         read_fifo(fifo1_fd, &n_files, sizeof(int));
         read_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
         strcpy(shmpointer[0].fragment, "READY");
+        //semop_usr(semid, SHDMEM, 1);
         semop_usr(semid, SHDMEM, 2);
 
         printf("Numeri di file da elaborare: %d\n", n_files);
@@ -123,7 +125,6 @@ int main(int argc, char * argv[]) {
             else if (errno != ENOMSG) {
                 errExit("Error while receiving message");
             }
-
         }
 
         //Wait for client to finish

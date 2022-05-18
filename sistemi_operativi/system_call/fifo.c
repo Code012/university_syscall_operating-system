@@ -12,7 +12,7 @@
 #include "fifo.h"
 
 void create_fifo (const char *pathname) {
-    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR) == -1)
+    if (mkfifo(pathname, O_CREAT | S_IRUSR | S_IWUSR | O_NONBLOCK) == -1)
         errExit("mkfifo failed!");
 }
 

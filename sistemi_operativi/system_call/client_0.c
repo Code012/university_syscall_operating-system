@@ -63,9 +63,8 @@ int main(int argc, char * argv[]) {
         printf("Looking for the semaphore...\n\n");
         errno = 0;
         semid = semget(ftok("client_0", 'a'), 0, S_IRUSR | S_IWUSR  | S_IRGRP | S_IWGRP);
-        if (errno == ENOENT){
+        if (errno == ENOENT)
             sleep(2);
-        }
         else if(semid == -1)
             errExit("Error while retrieving the semaphore");
     } while(semid == -1);
@@ -93,7 +92,7 @@ int main(int argc, char * argv[]) {
      *****************/
     fifo1_fd = open_fifo("FIFO1", O_WRONLY | O_NONBLOCK);
     fifo2_fd = open_fifo("FIFO2", O_WRONLY | O_NONBLOCK);
-    queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
+    queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR | O_NONBLOCK);
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
@@ -169,8 +168,13 @@ int main(int argc, char * argv[]) {
         if(strcmp(shmpointer[0].fragment, "READY") != 0)
             errExit("Corrupted start message");
 
-        // initialize sem 0 to count (number of files)
-        semop_usr(semid, ACCESS, count);
+        /*
+        if (semctl(semid, ACCESS, GETVAL) == 0)
+            semop_usr(semid, ACCESS, count); // initialize sem 0 to count (number of files)
+        else
+            semop_usr(semid, ACCESS, count - 1);
+        */
+        //semop_usr(semid, ACCESS, count);
 
         // child creation, parent operations
         for(child_num = 0; child_num < count && pid != 0; child_num++) {
@@ -215,8 +219,6 @@ int main(int argc, char * argv[]) {
                     break;
             }
 
-            //printf("Il path e dim: %s, %ld\n", to_send[child_num - 1], statbuf.st_size);
-
             // open files
             file_descriptor = open(to_send[child_num - 1], O_RDONLY);
             if (file_descriptor == -1)
@@ -239,13 +241,15 @@ int main(int argc, char * argv[]) {
 
             // lowering sem 0
             semop_usr(semid, ACCESS, -1);
+            printf("LIVE\n");
+            printf("Val: %d\n", semctl(semid, ACCESS, GETVAL));
             // block child until sem 0 is == 0
             semop_usr(semid, ACCESS, 0);
 
-            
+
             for (int j = 0, arr_flag[4] = {0} ; j < 4 ;) {
                 if (arr_flag[0] == 0) {
-                    semop_nowait(semid, FIFO1, -1);
+                    //semop_nowait(semid, FIFO1, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[0]);
                         write_fifo(fifo1_fd, &packet, sizeof(packet));
@@ -254,12 +258,18 @@ int main(int argc, char * argv[]) {
                         if(errno == 0){
                             arr_flag[0] = 1;
                             j ++;
+                            //if (semctl(semid, FIFO1, GETVAL) == 0)
+                                //semop_nowait(semid, FIFO1, 1);
                         }
                     }
+                    //else if (errno == EAGAIN)
+                        //semop_nowait(semid, FIFO1, 1);
+                    //semop_nowait(semid, FIFO1, -1);
+                    semop_usr(semid, FIFO1, -1);
                 }
 
                 if (arr_flag[1] == 0) {
-                    semop_nowait(semid, FIFO2, -1);
+                    //semop_nowait(semid, FIFO2, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[1]);
                         write_fifo(fifo2_fd, &packet, sizeof(packet));
@@ -268,15 +278,21 @@ int main(int argc, char * argv[]) {
                         if(errno == 0){
                             arr_flag[1] = 1;
                             j ++;
+                            //if (semctl(semid, FIFO2, GETVAL) == 0)
+                                //semop_nowait(semid, FIFO2, 1);
                         }
                     }
+                    //else if (errno == EAGAIN)
+                        //semop_nowait(semid, FIFO2, 1);
+                    //semop_nowait(semid, FIFO2, -1);
+                    semop_usr(semid, FIFO2, -1);
                 }
 
                 if (arr_flag[2] == 0) {
-                    semop_nowait(semid, MSGQUEUE, -1);
+                    //semop_nowait(semid, MSGQUEUE, -1);
                     if (errno == 0) {
                         packet = init_struct(child_num, getpid(), to_send[child_num - 1], char_to_read[2]);
-
+                      
                         errno = 0;
 
                         msgsnd(queue_id, &packet, sizeof(packet) - sizeof(long), IPC_NOWAIT);
@@ -285,22 +301,27 @@ int main(int argc, char * argv[]) {
                         if(errno == 0){
                             arr_flag[2] = 1;
                             j ++;
-                        } else if(errno != EAGAIN){
+                            //if (semctl(semid, MSGQUEUE, GETVAL) == 0)
+                                //semop_nowait(semid, MSGQUEUE, 1);
+                        } else if(errno != EAGAIN) {
                             errExit("Error while sending the message");
                         }
                     }
+                    //else if (errno == EAGAIN)
+                        //semop_nowait(semid, MSGQUEUE, 1);
+                    //semop_nowait(semid, MSGQUEUE, -1);
+                    semop_usr(semid, MSGQUEUE, -1);
                 }
 
-                if (arr_flag[3] == 0) {
+                /*if (arr_flag[3] == 0) {
                     //semop_nowait(semid, SHDMEM, -1);
                     //if (errno == 0) {
                      arr_flag[3] = 1;
                      j ++;
                     //}
-                }
+                }*/
             }
-            
-
+            printf("DIE\n");
             exit(0);
         } else {
             // waiting for all child to terminate
