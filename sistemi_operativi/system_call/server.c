@@ -70,7 +70,7 @@ int main(int argc, char * argv[]) {
     // unlocking semaphore ACCESS (all IPCs have been created)
     semop_usr(semid, ACCESS, 1);
 
-    printf("\nServer ready!\n");
+    printf("Server ready!\n");
 
     // wait for client to open IPCs
     semop_usr(semid, FINISH, -2);
@@ -81,6 +81,8 @@ int main(int argc, char * argv[]) {
     while(1) {
 
         // reset all the semaphores to restart the cicle and unlock Access (all IPCs have been created)
+        // Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
+        // 1,      0,     1,     1,        0,      1
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
