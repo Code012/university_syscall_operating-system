@@ -153,7 +153,7 @@ int main(int argc, char * argv[]) {
         /*******************************
          * CLIENT-SERVER COMMUNICATION *
          *******************************/
-            
+
         // writing n_files on FIFO1
         write_fifo(fifo1_fd, &count, sizeof(count));
         write_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
