@@ -299,8 +299,9 @@ int main(int argc, char * argv[]) {
                     //}
                 }
             }
-            
 
+            // closing file
+            close(file_descriptor);
             exit(0);
         } else {
             // waiting for all child to terminate

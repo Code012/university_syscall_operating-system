@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
 
         printf("Numeri di file da elaborare: %d\n", n_files);
 
-        for(int i = 0; i < n_files * 3; ){
+        for(int i = 0; i < n_files * 3;) {
 
             read_fifo(fifo1_fd, &packet, sizeof(packet));
             if (errno == 0) {
