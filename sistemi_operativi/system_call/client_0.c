@@ -40,6 +40,7 @@ int main(int argc, char * argv[]) {
     int file_descriptor;
     char char_to_read[4][1025];
     struct queue_msg *packet;
+    union semun semarg;
     
 
 
@@ -169,14 +170,18 @@ int main(int argc, char * argv[]) {
         if(strcmp(shmpointer[0].fragment, "READY") != 0)
             errExit("Corrupted start message");
 
-        // initialize sem 0 to count (number of files)
-        semop_usr(semid, ACCESS, count);
+        // set sem ACCESS to count (number of files)
+        // semop_usr(semid, ACCESS, count);
+        // set sem ACCESS to count (number of files). set FIFO1, FIFO2, MSGQUEUE to 50
+        unsigned short semarray[6] = {count, 50, 50, 50, 1, 1};
+        semarg.array = semarray;
+        if (semctl(semid, 0, SETALL, semarg) == -1)
+            errExit("Error while setting semaphore set");
 
         // child creation, parent operations
-        for(child_num = 0; child_num < count && pid != 0; child_num++) {
+        for(child_num = 0; child_num < count && pid != 0; child_num++)
             if((pid = fork()) == -1)
                 errExit("Error while forking");
-        }
 
         // child operations
         if(pid == 0) {
@@ -215,8 +220,6 @@ int main(int argc, char * argv[]) {
                     break;
             }
 
-            //printf("Il path e dim: %s, %ld\n", to_send[child_num - 1], statbuf.st_size);
-
             // open files
             file_descriptor = open(to_send[child_num - 1], O_RDONLY);
             if (file_descriptor == -1)
@@ -229,13 +232,7 @@ int main(int argc, char * argv[]) {
                     errExit("Error while reading file");
                 
                 char_to_read[j][files_dim[j]] = '\0';
-                
-                // printf("Il path è: %s", )
-                // printf("La stringa %d del processo %d: %s\n", j,  child_num, char_to_read[j]);
             }
-
-            //printf("\n\n");
-            
 
             // lowering sem 0
             semop_usr(semid, ACCESS, -1);
@@ -251,7 +248,7 @@ int main(int argc, char * argv[]) {
                         write_fifo(fifo1_fd, packet, sizeof(struct queue_msg));
 
                         //if everything went well:
-                        if(errno == 0){
+                        if(errno == 0) {
                             arr_flag[0] = 1;
                             j ++;
                         }
@@ -265,7 +262,7 @@ int main(int argc, char * argv[]) {
                         write_fifo(fifo2_fd, packet, sizeof(struct queue_msg));
 
                         //if everything went well:
-                        if(errno == 0){
+                        if(errno == 0) {
                             arr_flag[1] = 1;
                             j ++;
                         }
@@ -282,12 +279,11 @@ int main(int argc, char * argv[]) {
                         msgsnd(queue_id, packet, sizeof(struct queue_msg) - sizeof(long), IPC_NOWAIT);
 
                         //if everything goes well: go on! else: NOOP
-                        if(errno == 0){
+                        if(errno == 0) {
                             arr_flag[2] = 1;
                             j ++;
-                        } else if(errno != EAGAIN){
+                        } else if(errno != EAGAIN)
                             errExit("Error while sending the message");
-                        }
                     }
                 }
 
@@ -305,7 +301,7 @@ int main(int argc, char * argv[]) {
             exit(0);
         } else {
             // waiting for all child to terminate
-            for(int j = 0; j < count; j++){
+            for(int j = 0; j < count; j++) {
                 if(wait(NULL) == -1)
                     errExit("Error while waiting for children");
             }

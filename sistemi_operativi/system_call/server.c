@@ -82,7 +82,7 @@ int main(int argc, char * argv[]) {
 
         // reset all the semaphores to restart the cicle and unlock Access (all IPCs have been created)
         // Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
-        // 1,      0,     1,     1,        0,      1
+        // 0,      0,     1,     1,        0,      1
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
