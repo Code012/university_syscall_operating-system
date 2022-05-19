@@ -15,6 +15,8 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
     // Structs and variables
     DIR *dir = opendir(buf);
     char file_path[MAX_LENGTH_PATH];
+    char dir_path[MAX_LENGTH_PATH];
+    strcpy(dir_path, buf);
     struct dirent *file_dir = readdir(dir);
     struct stat statbuf;
 
@@ -22,13 +24,18 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
         // Check if file_dir refers to a file starting with sendme_
         if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0) {
 
+            // printf("prima: %s\n", buf);
+            // printf("prima: %s\n", file_path);
+
             // creating file_path string
-            strcpy(file_path, buf);
+            strcpy(file_path, dir_path);
             strcat(strcat(file_path, "/"), file_dir->d_name);
 
             // retrieving file stats
             if (stat(file_path, &statbuf) == -1)
                 errExit("Could not retrieve file stats");
+
+            // printf("\n---------------\n");
 
             // Check file size (4KB -> 4096)
             if (statbuf.st_size <= 4096) {
@@ -41,11 +48,13 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
         // check if file_dir refers to a directory
         if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0) {
             // creating file_path string
-            strcpy(file_path, buf);
+            strcpy(file_path, dir_path);
             strcat(strcat(file_path, "/"), file_dir->d_name);
 
             // recursive call
             count = search_dir(file_path, to_send, count);
+
+            // printf("Ben tornato: %s\n\n\n", dir_path);
         }
 
         file_dir = readdir(dir);
@@ -53,6 +62,8 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
 
     if (closedir(dir) == -1)
         errExit("Error while closing directory");
+
+    // printf("Dir path: %s\n", buf);
     
     return count;
 }
