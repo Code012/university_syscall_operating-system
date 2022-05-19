@@ -135,7 +135,6 @@ int main(int argc, char * argv[]) {
 
 
 
-
         /****************
          * FILE READING *
          ****************/
@@ -205,6 +204,20 @@ int main(int argc, char * argv[]) {
                     files_dim[0] = 2;
                     for (int j = 1; j < 4; j++)
                         files_dim[j] = 1;
+                    break;
+
+                case 6:
+                    files_dim[0] = 2;
+                    files_dim[1] = 2;
+                    files_dim[2] = 1;
+                    files_dim[3] = 1;
+                    break;
+
+                case 9:
+                    files_dim[0] = 3;
+                    files_dim[1] = 2;
+                    files_dim[2] = 2;
+                    files_dim[3] = 2;
                     break;
 
                 default:
@@ -288,11 +301,12 @@ int main(int argc, char * argv[]) {
                 }
 
                 if (arr_flag[3] == 0) {
-                    //semop_nowait(semid, SHDMEM, -1);
-                    //if (errno == 0) {
-                     arr_flag[3] = 1;
-                     j ++;
-                    //}
+                //    semop_nowait(semid, SHDMEM, -1);
+                //    if (errno == 0) {
+
+                        arr_flag[3] = 1;
+                        j ++;
+                //    }
                 }
             }
 

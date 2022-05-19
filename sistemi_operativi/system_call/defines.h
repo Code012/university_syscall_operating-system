@@ -40,11 +40,3 @@ struct queue_msg {
 void check_malloc (void *pointer);
 int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count);
 struct queue_msg *init_struct(long mtype, pid_t pid, char *pathname, char *fragment); 
-
-/*
-struct general_msg {
-    pid_t pid;
-    char pathname[250];     // assuming pathnames shorter than 250 Bytes
-    char fragment[1001];    // one more char to compensate for string terminator
-}
-*/
