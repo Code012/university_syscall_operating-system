@@ -19,7 +19,7 @@
 #include <errno.h>
 #include <sys/wait.h>
 
-#define MAX_LENGTH_PATH 150
+#define MAX_LENGTH_PATH 300
 #define MAX_FILES 100
 #define ACCESS 0
 #define FIFO1 1
