@@ -38,12 +38,12 @@ int main(int argc, char * argv[]) {
     // set flag to zero (never say never)
     opened = 0;
 
-    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
-    unsigned short semarray[6] = {0, 0, 1, 1, 0, 1};
+    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem, FINISH_CLIENT, FINISH_SERVER
+    unsigned short semarray[7] = {0, 0, 1, 1, 0, 1, 1};
     semarg.array = semarray;
 
     // creation of all the semaphores
-    semid = semget_usr(ftok("client_0", 'a'), 6, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    semid = semget_usr(ftok("client_0", 'a'), 7, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) {
     printf("Server ready!\n");
 
     // wait for client to open IPCs
-    semop_usr(semid, FINISH, -2);
+    semop_usr(semid, FINISH_CLIENT, -2);
 
     // set flag to one
     opened = 1;
@@ -81,8 +81,8 @@ int main(int argc, char * argv[]) {
     while(1) {
 
         // reset all the semaphores to restart the cicle and unlock Access (all IPCs have been created)
-        // Access, FIFO1, FIFO2, MsgQueue, ShdMem, Finish
-        // 0,      0,     1,     1,        0,      1
+        // Access, FIFO1, FIFO2, MsgQueue, ShdMem, FINISH_CLIENT, FINISH_SERVER
+        // 0,      0,     1,     1,        0,      1,             1
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
@@ -145,8 +145,9 @@ int main(int argc, char * argv[]) {
 
         }
 
-        //Wait for client to finish
-        semop_usr(semid, FINISH, 0);
+        //Wait for client to finish_CLIENT
+        semop_usr(semid, FINISH_SERVER, -1);
+        semop_usr(semid, FINISH_CLIENT, 0);
     }
 }
 
