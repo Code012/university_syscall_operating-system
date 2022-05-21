@@ -34,10 +34,19 @@
 struct queue_msg {
     long mtype;
     pid_t pid;
-    char pathname[MAX_LENGTH_PATH + 1]; // one more char to compensate for string terminator
-    char fragment[1025];                // one more char to compensate for string terminator
-    // DA PROVARE TERMINATORE
-};
+    char pathname[MAX_LENGTH_PATH + 1];     // one more char to compensate for string terminator
+    char fragment[1025];                    // one more char to compensate for string terminator
+}; 
+
+struct to_save {
+    // long mtype;
+    pid_t pid;
+    char pathname[MAX_LENGTH_PATH + 1];     // one more char to compensate for string terminator
+    char fragment1[1025];                   // one more char to compensate for string terminator
+    char fragment2[1025];                   // one more char to compensate for string terminator
+    char fragment3[1025];                   // one more char to compensate for string terminator
+    char fragment4[1025];                   // one more char to compensate for string terminator
+}
 
 void check_malloc (void *pointer);
 int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count);
