@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
     // Unlocking finish (IPCs opened)
-    semop_usr(semid, FINISH_CLIENT, 2);
+    semop_usr(semid, FINISH_CLIENT, 1);
 
 
 
@@ -172,7 +172,7 @@ int main(int argc, char * argv[]) {
         // set sem ACCESS to count (number of files)
         // semop_usr(semid, ACCESS, count);
         // set sem ACCESS to count (number of files). set FIFO1, FIFO2, MSGQUEUE to IPC_MAX
-        unsigned short semarray[6] = {count, IPC_MAX, IPC_MAX, IPC_MAX, 1, 1};
+        unsigned short semarray[7] = {count, IPC_MAX, IPC_MAX, IPC_MAX, 1, 0, 0};
         semarg.array = semarray;
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while setting semaphore set");
@@ -191,15 +191,6 @@ int main(int argc, char * argv[]) {
             // splitting files
             switch (statbuf.st_size)
             {
-                case 1:
-                    files_dim[0] = 1;
-                    break;
-                
-                case 2:
-                    files_dim[0] = 1;
-                    files_dim[1] = 1;
-                    break;
-
                 case 5:
                     files_dim[0] = 2;
                     for (int j = 1; j < 4; j++)
@@ -334,9 +325,12 @@ int main(int argc, char * argv[]) {
             }
         }
 
+        printf("Il valore di FINISH_CLIENT: %d\n", semctl(semid, FINISH_CLIENT, GETVAL));
+
         // let the server know that we are done
-        semop_usr(semid, FINISH_CLIENT, -1);
-        semop_usr(semid, FINISH_SERVER, 0);
+        semop_usr(semid, FINISH_CLIENT, 1);
+        // wait for server to be done
+        semop_usr(semid, FINISH_SERVER, -1);
     }
 
     return 0;
