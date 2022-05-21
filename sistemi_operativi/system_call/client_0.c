@@ -95,7 +95,7 @@ int main(int argc, char * argv[]) {
     fifo1_fd = open_fifo("FIFO1", O_WRONLY | O_NONBLOCK);
     fifo2_fd = open_fifo("FIFO2", O_WRONLY | O_NONBLOCK);
     queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
-    shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * 50, S_IRUSR | S_IWUSR);
+    shmem_id = alloc_shared_memory(ftok("client_0", 'a'), sizeof(struct queue_msg) * IPC_MAX, S_IRUSR | S_IWUSR);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
     // Unlocking finish (IPCs opened)
@@ -171,8 +171,8 @@ int main(int argc, char * argv[]) {
 
         // set sem ACCESS to count (number of files)
         // semop_usr(semid, ACCESS, count);
-        // set sem ACCESS to count (number of files). set FIFO1, FIFO2, MSGQUEUE to 50
-        unsigned short semarray[6] = {count, 50, 50, 50, 1, 1};
+        // set sem ACCESS to count (number of files). set FIFO1, FIFO2, MSGQUEUE to IPC_MAX
+        unsigned short semarray[6] = {count, IPC_MAX, IPC_MAX, IPC_MAX, 1, 1};
         semarg.array = semarray;
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while setting semaphore set");
@@ -301,12 +301,25 @@ int main(int argc, char * argv[]) {
                 }
 
                 if (arr_flag[3] == 0) {
-                //    semop_nowait(semid, SHDMEM, -1);
-                //    if (errno == 0) {
+                    semop_nowait(semid, SHDMEM, -1);
+                    if (errno == 0) {
+                        for(int k = 0; k < IPC_MAX && arr_flag[3] == 0; k++){
+                            if(shmpointer[k].mtype == 0){
 
-                        arr_flag[3] = 1;
-                        j ++;
-                //    }
+                                // copy the payload in the shmem
+                                strcpy(shmpointer[k].fragment, char_to_read[3]);
+                                strcpy(shmpointer[k].pathname, to_send[child_num - 1]);
+                                shmpointer[k].mtype = child_num;
+                                shmpointer[k].pid = getpid();
+
+                                // if everything goes as planned:
+                                arr_flag[3] = 1;
+                                j ++;
+                            }
+                            // else: halt and catch fire :(
+                        }
+                        semop_nowait(semid, SHDMEM, 1);
+                    }
                 }
             }
 

@@ -21,6 +21,7 @@
 
 #define MAX_LENGTH_PATH 300
 #define MAX_FILES 100
+#define IPC_MAX 50
 #define ACCESS 0
 #define FIFO1 1
 #define FIFO2 2
