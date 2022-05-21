@@ -55,7 +55,7 @@ int main(int argc, char * argv[]) {
     if(queue_id == -1)
         errExit("Error while creating a message queue");
     shmem_id = alloc_shared_memory(ftok("client_0", 'a'),
-                                    sizeof(struct queue_msg) * 50,
+                                    sizeof(struct queue_msg) * IPC_MAX,
                                     IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     // set sigHandler as a handler for the SIGINT
@@ -94,13 +94,14 @@ int main(int argc, char * argv[]) {
         read_fifo(fifo1_fd, &n_files, sizeof(int));
         read_fifo(fifo1_fd, &client_pid, sizeof(pid_t));
 
-        strcpy(shmpointer[0].fragment, "READY");
+        strcpy(shmpointer[0].fragment, "READY\0");
         semop_usr(semid, SHDMEM, 2);
 
         printf("Numeri di file da elaborare: %d\n", n_files);
 
-        for(int i = 0; i < n_files * 3;) {
+        for(int i = 0; i < n_files * 4;) {
 
+            // Retrieve message from FIFO1
             read_fifo(fifo1_fd, &packet, sizeof(packet));
             if (errno == 0) {
                 printf("FIFO1 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
@@ -108,6 +109,7 @@ int main(int argc, char * argv[]) {
                 i++;
             }
 
+            // Retrieve message from FIFO2
             read_fifo(fifo2_fd, &packet, sizeof(packet));
             if (errno == 0) {
                 printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
@@ -115,6 +117,7 @@ int main(int argc, char * argv[]) {
                 i++;
             }
 
+            // Retrieve message from MSGQUEUE
             errno = 0;
             msgrcv(queue_id, &packet, sizeof(packet), 0, IPC_NOWAIT);
             if (errno == 0) {
@@ -124,6 +127,20 @@ int main(int argc, char * argv[]) {
             }
             else if (errno != ENOMSG) {
                 errExit("Error while receiving message");
+            }
+
+            // Retrieve message from SHMEM
+            semop_nowait(semid, SHDMEM, -1);
+            if(errno == 0){
+                for(int k = 0, read = 0; k < IPC_MAX && read == 0; k++){
+                    if(shmpointer[k].mtype != 0){
+                        printf("SHDMEM process PID: %d, Message: %s\n", shmpointer[k].pid, shmpointer[k].fragment);
+                        shmpointer[k].mtype = 0;
+                        read++;
+                        i++;
+                    }
+                }
+                semop_nowait(semid, SHDMEM, 1);
             }
 
         }
