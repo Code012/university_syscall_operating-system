@@ -31,15 +31,15 @@ void read_fifo (int fd, void *buf, ssize_t bytes_to_read) {
 
     ssize_t char_read = read(fd, buf, bytes_to_read);
 
-    // check if write was succesfull
+    // check if read was succesfull
     if(errno == EAGAIN || errno == EWOULDBLOCK)
         return;
 
     if (char_read == -1)
-        errExit("write_fifo failed!");
+        errExit("read_fifo failed!");
 
     if (char_read != bytes_to_read)
-        errExit("broken fifo while writing!");
+        errExit("broken fifo while reading!");
 }
 
 void write_fifo (int fd, void *buf, ssize_t bytes_to_write) {

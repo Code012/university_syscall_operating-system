@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
 
     // Unlocking finish (IPCs opened)
-    semop_usr(semid, FINISH, 2);
+    semop_usr(semid, FINISH_CLIENT, 2);
 
 
 
@@ -335,7 +335,8 @@ int main(int argc, char * argv[]) {
         }
 
         // let the server know that we are done
-        semop_usr(semid, FINISH, -1);
+        semop_usr(semid, FINISH_CLIENT, -1);
+        semop_usr(semid, FINISH_SERVER, 0);
     }
 
     return 0;
