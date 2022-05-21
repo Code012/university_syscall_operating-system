@@ -325,8 +325,6 @@ int main(int argc, char * argv[]) {
             }
         }
 
-        printf("Il valore di FINISH_CLIENT: %d\n", semctl(semid, FINISH_CLIENT, GETVAL));
-
         // let the server know that we are done
         semop_usr(semid, FINISH_CLIENT, 1);
         // wait for server to be done
