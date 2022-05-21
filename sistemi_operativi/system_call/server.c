@@ -86,6 +86,8 @@ int main(int argc, char * argv[]) {
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
+        printf("Il valore di FINISH_SERVER: %d\n", semctl(semid, FINISH_SERVER, GETVAL));
+
         // lock first semaphore until the number of files are written on FIFO1
         printf("\nWaiting for client...\n\n");
         semop_usr(semid, FIFO1, -1);
@@ -145,9 +147,14 @@ int main(int argc, char * argv[]) {
 
         }
 
-        //Wait for client to finish_CLIENT
-        semop_usr(semid, FINISH_SERVER, -1);
-        semop_usr(semid, FINISH_CLIENT, 0);
+        printf("Il valore di FINISH_SERVER: %d\n", semctl(semid, FINISH_SERVER, GETVAL));
+
+        printf("PORCO\n");
+        // let client know that we are done
+        semop_usr(semid, FINISH_SERVER, 1);
+        printf("DIO\n");
+        // wait for client to finish
+        semop_usr(semid, FINISH_CLIENT, -1);
     }
 }
 
