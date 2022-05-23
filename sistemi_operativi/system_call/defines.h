@@ -53,5 +53,6 @@ void check_malloc (void *pointer);
 int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count);
 struct queue_msg *init_struct(long mtype, pid_t pid, char *pathname, char *fragment); 
 void init_output(struct to_save output[], int n);
-bool check_frags(struct to_save output);
-char *gen_out_path(char pathname[]);
+void check_frags(struct to_save output);
+//char *gen_out_path(char pathname[]);
+void gen_out_path(char pathname[], char * out_path);

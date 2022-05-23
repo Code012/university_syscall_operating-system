@@ -97,12 +97,27 @@ void init_output(struct to_save output[], int n) {
 }
 
 // Check that every fragment is not ""
-bool check_frags(struct to_save output) {
-    return strcmp(output.fragment1, "") && strcmp(output.fragment2, "") && strcmp(output.fragment3, "") && strcmp(output.fragment4, "");
+void check_frags(struct to_save output) {
+    if(strcmp(output.fragment1, "") &&
+        strcmp(output.fragment2, "") &&
+        strcmp(output.fragment3, "") &&
+        strcmp(output.fragment4, ""))
+    {
+        // Crating path for _out files
+        char *out_path = malloc(sizeof(char) * MAX_LENGTH_PATH);
+        check_malloc(out_path);
+
+        gen_out_path(output.pathname, out_path);
+
+        strcpy(output.fragment1, "");
+
+        // freeing malloc
+        free(out_path);
+    }
 }
 
 // Create path for _out files
-char *gen_out_path(char pathname[]) {
+/*char *gen_out_path(char pathname[]) {
     char *pathcpy = malloc(sizeof(char) * MAX_LENGTH_PATH);
     strcpy(pathcpy, pathname);
     char *extcpy = NULL;
@@ -125,4 +140,26 @@ char *gen_out_path(char pathname[]) {
     printf("\nIl file di output è: %s\n", pathcpy);
 
     return pathcpy;
+}*/
+
+void gen_out_path(char pathname[], char * out_path) {
+    strcpy(out_path, pathname);
+    char *extcpy = NULL;
+    char *ext = strrchr(out_path, '.');
+
+    if(ext != NULL) {
+        //Gimmy/madoska.txt
+        strcpy(extcpy, ext);
+        //Gimmy/madoska.txt     .txt
+        strcpy(ext, "_out");
+        //Gimmy/madoska_out     .txt
+        strcat(out_path, extcpy);
+        //Gimmy/madoska_out.txt
+    } else {
+        //Gimmy/madoska
+        strcat(out_path, "_out");
+        //Gimmy/madoska_out
+    }
+
+    printf("\nIl file di output è: %s\n", out_path);
 }
