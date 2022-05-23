@@ -61,8 +61,6 @@ int main(int argc, char * argv[]) {
     // set sigHandler as a handler for the SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
         errExit("change signal handler (SIGINT) failed!");
-    if (signal(SIGQUIT, sigHandler) == SIG_ERR)
-        errExit("change signal handler (SIGQUIT) failed!");
 
     // opening and attaching all of the IPC
     fifo1_fd = open_fifo("FIFO1", O_RDONLY | O_NONBLOCK);
@@ -167,13 +165,14 @@ int main(int argc, char * argv[]) {
 
                 if (check_frags(output[k])) {
                     // Crating path for _out files
-                    //char *out_path = gen_out_path(output[k].pathname);
+                    char *out_path = gen_out_path(output[k].pathname);
+
 
 
                     strcpy(output[k].fragment1, "\0");
 
                     // freeing malloc
-                    //free(out_path);
+                    free(out_path);
 
                     i++;
                 }
@@ -213,9 +212,5 @@ void sigHandler (int sig) {
             errExit("Error while sending SIGUSR1 to server");
 
         exit(0);
-    }
-
-    if(sig == SIGQUIT) {
-
     }
 }
