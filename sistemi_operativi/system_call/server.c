@@ -97,14 +97,24 @@ int main(int argc, char * argv[]) {
         strcpy(shmpointer[0].fragment, "READY\0");
         semop_usr(semid, SHDMEM, 1);
 
-        printf("Numeri di file da elaborare: %d\n", n_files);
+        printf("Numero di file da elaborare: %d\n", n_files);
+
+        struct to_save output[n_files];
+
+        init_output(output, n_files);
 
         for(int i = 0; i < n_files * 4;) {
 
             // Retrieve message from FIFO1
             read_fifo(fifo1_fd, &packet, sizeof(packet));
             if (errno == 0) {
-                printf("FIFO1 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                //printf("FIFO1 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                // saving pid and pathname only once since they're the same
+                output[packet.mtype - 1].pid = packet.pid;
+                strcpy(output[packet.mtype - 1].pathname, packet.pathname);
+                // saving fragment 1
+                strcpy(output[packet.mtype - 1].fragment1, packet.fragment);
+
                 semop_usr(semid, FIFO1, 1);
                 i++;
             }
@@ -112,7 +122,10 @@ int main(int argc, char * argv[]) {
             // Retrieve message from FIFO2
             read_fifo(fifo2_fd, &packet, sizeof(packet));
             if (errno == 0) {
-                printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                //printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                // saving fragment 2
+                strcpy(output[packet.mtype - 1].fragment2, packet.fragment);
+
                 semop_usr(semid, FIFO2, 1);
                 i++;
             }
@@ -121,7 +134,10 @@ int main(int argc, char * argv[]) {
             errno = 0;
             msgrcv(queue_id, &packet, sizeof(packet), 0, IPC_NOWAIT);
             if (errno == 0) {
-                printf("MSGQUEUE process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                //printf("MSGQUEUE process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+                // saving fragment 3
+                strcpy(output[packet.mtype - 1].fragment3, packet.fragment);
+
                 semop_usr(semid, MSGQUEUE, 1);
                 i++;
             }
@@ -134,13 +150,32 @@ int main(int argc, char * argv[]) {
             if(errno == 0){
                 for(int k = 0, read = 0; k < IPC_MAX && read == 0; k++){
                     if(shmpointer[k].mtype != 0){
-                        printf("SHDMEM process PID: %d, Message: %s\n", shmpointer[k].pid, shmpointer[k].fragment);
+                        //printf("SHDMEM process PID: %d, Message: %s\n", shmpointer[k].pid, shmpointer[k].fragment);
+                        // saving fragment 4
+                        strcpy(output[packet.mtype - 1].fragment4, packet.fragment);
+
                         shmpointer[k].mtype = 0;
                         read++;
                         i++;
                     }
                 }
                 semop_nowait(semid, SHDMEM, 1);
+            }
+
+
+            // Creating files _out
+            for (int k = 0 ; k < n_files ; k++) {
+                if (check_frags(output[packet.mtype -1])) {
+                    // Crating path for _out files
+                    char *out_path = gen_out_path(output[packet.mtype -1].pathname);
+
+
+
+                    strcpy(output[packet.mtype - 1].fragment1, "");
+
+                    // freeing malloc
+                    free(out_path);
+                }
             }
 
         }
