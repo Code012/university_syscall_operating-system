@@ -41,6 +41,7 @@ int main(int argc, char * argv[]) {
     char char_to_read[4][1025];
     struct queue_msg *packet;
     union semun semarg;
+    unsigned short semarray[7] = {0, IPC_MAX, IPC_MAX, IPC_MAX, 1, 0, 0};
     
 
 
@@ -172,7 +173,7 @@ int main(int argc, char * argv[]) {
         // set sem ACCESS to count (number of files)
         // semop_usr(semid, ACCESS, count);
         // set sem ACCESS to count (number of files). set FIFO1, FIFO2, MSGQUEUE to IPC_MAX
-        unsigned short semarray[7] = {count, IPC_MAX, IPC_MAX, IPC_MAX, 1, 0, 0};
+        semarray[0] = count;
         semarg.array = semarray;
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while setting semaphore set");

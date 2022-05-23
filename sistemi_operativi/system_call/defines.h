@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <stdbool.h>
 
 #define MAX_LENGTH_PATH 300
 #define MAX_FILES 100
@@ -46,8 +47,11 @@ struct to_save {
     char fragment2[1025];                   // one more char to compensate for string terminator
     char fragment3[1025];                   // one more char to compensate for string terminator
     char fragment4[1025];                   // one more char to compensate for string terminator
-}
+};
 
 void check_malloc (void *pointer);
 int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count);
 struct queue_msg *init_struct(long mtype, pid_t pid, char *pathname, char *fragment); 
+void init_output(struct to_save output[], int n);
+bool check_frags(struct to_save output);
+char *gen_out_path(char pathname[]);

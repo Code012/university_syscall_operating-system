@@ -2,6 +2,7 @@
 /// @brief Contiene l'implementazione delle funzioni
 ///         specifiche del progetto.
 
+#include <string.h>
 #include "defines.h"
 #include "err_exit.h"
 
@@ -82,4 +83,46 @@ struct queue_msg *init_struct(long mtype, pid_t pid, char *pathname, char *fragm
     strcpy(message->fragment, fragment);
 
     return message;
+}
+
+// Function to initialize th output struct for commodity
+
+void init_output(struct to_save output[], int n) {
+    for (int i = 0 ; i < n ; i++) {
+        strcpy(output[i].fragment1, "");
+        strcpy(output[i].fragment2, "");
+        strcpy(output[i].fragment3, "");
+        strcpy(output[i].fragment4, "");
+    }
+}
+
+// Check that every fragment is not ""
+bool check_frags(struct to_save output) {
+    return strcmp(output.fragment1, "") && strcmp(output.fragment2, "") && strcmp(output.fragment3, "") && strcmp(output.fragment4, "");
+}
+
+// Create path for _out files
+char *gen_out_path(char pathname[]) {
+    char *pathcpy = malloc(sizeof(char) * MAX_LENGTH_PATH);
+    strcpy(pathcpy, pathname);
+    char *extcpy = NULL;
+    char *ext = strrchr(pathcpy, '.');
+
+    if(ext != NULL) {
+        //Gimmy/madoska.txt
+        strcpy(extcpy, ext);
+        //Gimmy/madoska.txt     .txt
+        strcpy(ext, "_out");
+        //Gimmy/madoska_out     .txt
+        strcat(pathcpy, extcpy);
+        //Gimmy/madoska_out.txt
+    } else {
+        //Gimmy/madoska
+        strcat(pathcpy, "_out");
+        //Gimmy/madoska_out
+    }
+
+    printf("\nIl file di output è: %s\n", pathcpy);
+
+    return pathcpy;
 }
