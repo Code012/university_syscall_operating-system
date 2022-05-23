@@ -166,11 +166,18 @@ int main(int argc, char * argv[]) {
                 if (check_frags(output[k])) {
                     // Crating path for _out files
                     char *out_path = gen_out_path(output[k].pathname);
+                                      
+                    int fp = open(out_path, O_WRONLY | O_APPEND | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO);
+                    if(fp == -1)
+                        errExit("Errore nella creazione del file");
 
-
-
+                    write(fp, output[k].fragment1, strlen(output[k].fragment1));
+                    write(fp, output[k].fragment2, strlen(output[k].fragment2));
+                    write(fp, output[k].fragment3, strlen(output[k].fragment3));
+                    write(fp, output[k].fragment4, strlen(output[k].fragment4));
+                    close(fp);
+                    
                     strcpy(output[k].fragment1, "\0");
-
                     // freeing malloc
                     free(out_path);
 
