@@ -115,6 +115,24 @@ int main(int argc, char * argv[]) {
                 // saving fragment 1
                 strcpy(output[packet.mtype - 1].fragment1, packet.fragment);
 
+                check_frags(output[packet.mtype - 1]);
+
+                /*
+                if (check_frags(output[packet.mtype - 1])) {
+                    // Crating path for _out files
+                    char *out_path = malloc(sizeof(char) * MAX_LENGTH_PATH);
+                    check_malloc(out_path);
+
+                    gen_out_path(output[packet.mtype -1].pathname, out_path);
+
+
+
+                    strcpy(output[packet.mtype - 1].fragment1, "");
+
+                    // freeing malloc
+                    free(out_path);
+                }*/
+
                 semop_usr(semid, FIFO1, 1);
                 i++;
             }
@@ -125,6 +143,8 @@ int main(int argc, char * argv[]) {
                 //printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
                 // saving fragment 2
                 strcpy(output[packet.mtype - 1].fragment2, packet.fragment);
+
+                check_frags(output[packet.mtype - 1]);
 
                 semop_usr(semid, FIFO2, 1);
                 i++;
@@ -137,6 +157,8 @@ int main(int argc, char * argv[]) {
                 //printf("MSGQUEUE process PID: %d, Message: %s\n", packet.pid, packet.fragment);
                 // saving fragment 3
                 strcpy(output[packet.mtype - 1].fragment3, packet.fragment);
+
+                check_frags(output[packet.mtype - 1]);
 
                 semop_usr(semid, MSGQUEUE, 1);
                 i++;
@@ -154,6 +176,8 @@ int main(int argc, char * argv[]) {
                         // saving fragment 4
                         strcpy(output[packet.mtype - 1].fragment4, packet.fragment);
 
+                        check_frags(output[packet.mtype - 1]);
+
                         shmpointer[k].mtype = 0;
                         read++;
                         i++;
@@ -163,11 +187,18 @@ int main(int argc, char * argv[]) {
             }
 
 
+            /*
             // Creating files _out
-            for (int k = 0 ; k < n_files ; k++) {
-                if (check_frags(output[packet.mtype -1])) {
+            for (int k = 0; k < n_files; k++) {
+                printf("La k: %d\n", k);
+                //if (strcmp(output[packet.mtype - 1].fragment1, "") && strcmp(output[packet.mtype - 1].fragment2, "") && strcmp(output[packet.mtype - 1].fragment3, "") && strcmp(output[packet.mtype - 1].fragment4, "")) {
+                if (check_frags(output[packet.mtype - 1])) {
                     // Crating path for _out files
-                    char *out_path = gen_out_path(output[packet.mtype -1].pathname);
+                    printf("Dentro if!\n");
+                    char *out_path = malloc(sizeof(char) * MAX_LENGTH_PATH);
+                    check_malloc(out_path);
+
+                    gen_out_path(output[packet.mtype -1].pathname, out_path);
 
 
 
@@ -176,7 +207,7 @@ int main(int argc, char * argv[]) {
                     // freeing malloc
                     free(out_path);
                 }
-            }
+            }*/
 
         }
 
