@@ -257,6 +257,8 @@ int main(int argc, char * argv[]) {
                             arr_flag[0] = 1;
                             j ++;
                         }
+
+                        free(packet);
                     }
                 }
 
@@ -271,6 +273,8 @@ int main(int argc, char * argv[]) {
                             arr_flag[1] = 1;
                             j ++;
                         }
+
+                        free(packet);
                     }
                 }
 
@@ -289,6 +293,8 @@ int main(int argc, char * argv[]) {
                             j ++;
                         } else if(errno != EAGAIN)
                             errExit("Error while sending the message");
+
+                        free(packet);
                     }
                 }
 

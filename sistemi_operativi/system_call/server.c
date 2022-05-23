@@ -163,12 +163,9 @@ int main(int argc, char * argv[]) {
             }
 
             // Creating files _out
-            printf("\n\n\nnigga\n");
             for (int k = 0 ; k < n_files ; k++) {
-                printf("for %d\n", k);
 
                 if (check_frags(output[k])) {
-                    printf("if\n\n");
                     // Crating path for _out files
                     //char *out_path = gen_out_path(output[k].pathname);
 
