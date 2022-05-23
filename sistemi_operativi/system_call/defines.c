@@ -98,8 +98,21 @@ void init_output(struct to_save output[], int n) {
 
 // Check that every fragment is not ""
 bool check_frags(struct to_save output) {
+    if(strcmp(output.fragment1, "\0") == 0)
+        return 0;
+    
+    if(strcmp(output.fragment2, "\0") == 0)
+        return 0;
+    
+    if(strcmp(output.fragment3, "\0") == 0)
+        return 0;
 
-    return ((strcmp(output.fragment1, "\0") != 0) && (strcmp(output.fragment2, "\0") != 0) && (strcmp(output.fragment3, "\0") != 0) && (strcmp(output.fragment4, "\0") != 0));
+    if(strcmp(output.fragment4, "\0") == 0)
+        return 0;
+
+    return 1;
+
+    //return ((strcmp(output.fragment1, "\0") != 0) && (strcmp(output.fragment2, "\0") != 0) && (strcmp(output.fragment3, "\0") != 0) && (strcmp(output.fragment4, "\0") != 0));
 }
 
 // Create path for _out files

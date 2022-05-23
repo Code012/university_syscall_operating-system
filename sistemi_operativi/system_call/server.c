@@ -180,21 +180,6 @@ int main(int argc, char * argv[]) {
 
                     i++;
                 }
-
-                if(strcmp(output[k].fragment1, "\0") != 0) {
-                printf("frag 1 is here\n");
-                }
-                if(strcmp(output[k].fragment2, "\0") != 0) {
-                    printf("frag 2 is here\n");
-                }
-                if(strcmp(output[k].fragment3, "\0") != 0) {
-                    printf("frag 3 is here\n");
-                }
-                if(strcmp(output[k].fragment4, "\0") != 0) {
-                    printf("frag 4 is here\n");
-                }
-
-                sleep(1);
             }
 
         }
