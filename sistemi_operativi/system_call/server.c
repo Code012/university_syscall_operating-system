@@ -61,6 +61,8 @@ int main(int argc, char * argv[]) {
     // set sigHandler as a handler for the SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
         errExit("change signal handler (SIGINT) failed!");
+    if (signal(SIGQUIT, sigHandler) == SIG_ERR)
+        errExit("change signal handler (SIGQUIT) failed!");
 
     // opening and attaching all of the IPC
     fifo1_fd = open_fifo("FIFO1", O_RDONLY | O_NONBLOCK);
@@ -103,7 +105,7 @@ int main(int argc, char * argv[]) {
 
         init_output(output, n_files);
 
-        for(int i = 0 ; i < n_files * 4 ;) {
+        for(int i = 0 ; i < n_files ;) {
 
             // Retrieve message from FIFO1
             read_fifo(fifo1_fd, &packet, sizeof(packet));
@@ -116,7 +118,6 @@ int main(int argc, char * argv[]) {
                 strcpy(output[packet.mtype - 1].fragment1, packet.fragment);
 
                 semop_usr(semid, FIFO1, 1);
-                i++;
             }
 
             // Retrieve message from FIFO2
@@ -127,7 +128,6 @@ int main(int argc, char * argv[]) {
                 strcpy(output[packet.mtype - 1].fragment2, packet.fragment);
 
                 semop_usr(semid, FIFO2, 1);
-                i++;
             }
 
             // Retrieve message from MSGQUEUE
@@ -139,7 +139,6 @@ int main(int argc, char * argv[]) {
                 strcpy(output[packet.mtype - 1].fragment3, packet.fragment);
 
                 semop_usr(semid, MSGQUEUE, 1);
-                i++;
             }
             else if (errno != ENOMSG) {
                 errExit("Error while receiving message");
@@ -150,13 +149,14 @@ int main(int argc, char * argv[]) {
             if(errno == 0){
                 for(int k = 0, read = 0; k < IPC_MAX && read == 0; k++){
                     if(shmpointer[k].mtype != 0){
-                        printf("SHDMEM process PID: %d, Message: %s\n", shmpointer[k].pid, shmpointer[k].fragment);
-                        // saving fragment 4
-                        strcpy(output[packet.mtype - 1].fragment4, packet.fragment);
+                                                // saving fragment 4
+                        strcpy(output[shmpointer[k].mtype - 1].fragment4, shmpointer[k].fragment);
+
+                        printf("SHDMEM process PID: %d, Message: %s, Saved message: %s\n", shmpointer[k].pid, shmpointer[k].fragment, output[shmpointer[k].mtype -1].fragment4);
+                        printf("mtype: %ld\n", packet.mtype-1);
 
                         shmpointer[k].mtype = 0;
                         read++;
-                        i++;
                     }
                 }
                 semop_nowait(semid, SHDMEM, 1);
@@ -213,5 +213,9 @@ void sigHandler (int sig) {
             errExit("Error while sending SIGUSR1 to server");
 
         exit(0);
+    }
+
+    if(sig == SIGQUIT) {
+
     }
 }
