@@ -1,0 +1,11 @@
+[Parte 1, del file /home/opt0x/projects/syscall/syscall-operating_system/sistemi_operativi/system_call/test/sendme_1, spedita dal processo 3214 tramite FIFO1]
+12
+
+[Parte 2, del file /home/opt0x/projects/syscall/syscall-operating_system/sistemi_operativi/system_call/test/sendme_1, spedita dal processo 3214 tramite FIFO2]
+34
+
+[Parte 3, del file /home/opt0x/projects/syscall/syscall-operating_system/sistemi_operativi/system_call/test/sendme_1, spedita dal processo 3214 tramite MsgQueue]
+56
+
+[Parte 4, del file /home/opt0x/projects/syscall/syscall-operating_system/sistemi_operativi/system_call/test/sendme_1, spedita dal processo 3214 tramite ShdMem]
+7

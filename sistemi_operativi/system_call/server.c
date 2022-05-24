@@ -166,15 +166,50 @@ int main(int argc, char * argv[]) {
                 if (check_frags(output[k])) {
                     // Crating path for _out files
                     char *out_path = gen_out_path(output[k].pathname);
+                    char temp_int[30];
+                    char to_write[MAX_LENGTH_PATH + 100];
                                       
-                    int fp = open(out_path, O_WRONLY | O_APPEND | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO);
+                    int fp = open(out_path, O_WRONLY | O_TRUNC | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO);
                     if(fp == -1)
                         errExit("Errore nella creazione del file");
 
+
+                    strcpy(to_write, "[Parte 1, del file ");
+                    strcat(to_write, output[k].pathname);
+                    strcat(to_write, ", spedita dal processo ");
+                    sprintf(temp_int, "%d" ,output[k].pid);
+                    strcat(to_write, temp_int);
+                    strcat(to_write, " tramite FIFO1]\n");
+                    write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment1, strlen(output[k].fragment1));
+
+                    strcpy(to_write, "\n\n[Parte 2, del file ");
+                    strcat(to_write, output[k].pathname);
+                    strcat(to_write, ", spedita dal processo ");
+                    sprintf(temp_int, "%d" ,output[k].pid);
+                    strcat(to_write, temp_int);
+                    strcat(to_write, " tramite FIFO2]\n");
+                    write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment2, strlen(output[k].fragment2));
+
+                    strcpy(to_write, "\n\n[Parte 3, del file ");
+                    strcat(to_write, output[k].pathname);
+                    strcat(to_write, ", spedita dal processo ");
+                    sprintf(temp_int, "%d" ,output[k].pid);
+                    strcat(to_write, temp_int);
+                    strcat(to_write, " tramite MsgQueue]\n");
+                    write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment3, strlen(output[k].fragment3));
+
+                    strcpy(to_write, "\n\n[Parte 4, del file ");
+                    strcat(to_write, output[k].pathname);
+                    strcat(to_write, ", spedita dal processo ");
+                    sprintf(temp_int, "%d" ,output[k].pid);
+                    strcat(to_write, temp_int);
+                    strcat(to_write, " tramite ShdMem]\n");
+                    write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment4, strlen(output[k].fragment4));
+
                     close(fp);
                     
                     strcpy(output[k].fragment1, "\0");
