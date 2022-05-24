@@ -108,7 +108,9 @@ int main(int argc, char * argv[]) {
             // Retrieve message from FIFO1
             read_fifo(fifo1_fd, &packet, sizeof(packet));
             if (errno == 0) {
-                printf("FIFO1 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
+                //printf("FIFO1 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
                 // saving pid and pathname only once since they're the same
                 output[packet.mtype - 1].pid = packet.pid;
                 strcpy(output[packet.mtype - 1].pathname, packet.pathname);
@@ -121,7 +123,9 @@ int main(int argc, char * argv[]) {
             // Retrieve message from FIFO2
             read_fifo(fifo2_fd, &packet, sizeof(packet));
             if (errno == 0) {
-                printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
+                //printf("FIFO2 process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
                 // saving fragment 2
                 strcpy(output[packet.mtype - 1].fragment2, packet.fragment);
 
@@ -130,9 +134,11 @@ int main(int argc, char * argv[]) {
 
             // Retrieve message from MSGQUEUE
             errno = 0;
-            msgrcv(queue_id, &packet, sizeof(packet), 0, IPC_NOWAIT);
+            msgrcv(queue_id, &packet, sizeof(struct queue_msg) - sizeof(long), 0, IPC_NOWAIT);
             if (errno == 0) {
-                printf("MSGQUEUE process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
+                //printf("MSGQUEUE process PID: %d, Message: %s\n", packet.pid, packet.fragment);
+
                 // saving fragment 3
                 strcpy(output[packet.mtype - 1].fragment3, packet.fragment);
 
@@ -150,8 +156,7 @@ int main(int argc, char * argv[]) {
                                                 // saving fragment 4
                         strcpy(output[shmpointer[k].mtype - 1].fragment4, shmpointer[k].fragment);
 
-                        printf("SHDMEM process PID: %d, Message: %s, Saved message: %s\n", shmpointer[k].pid, shmpointer[k].fragment, output[shmpointer[k].mtype -1].fragment4);
-                        printf("mtype: %ld\n", packet.mtype-1);
+                        //printf("SHDMEM process PID: %d, Message: %s, Saved message: %s\n", shmpointer[k].pid, shmpointer[k].fragment, output[shmpointer[k].mtype -1].fragment4);
 
                         shmpointer[k].mtype = 0;
                         read++;
@@ -226,6 +231,9 @@ int main(int argc, char * argv[]) {
         semop_usr(semid, FINISH_SERVER, 1);
         // wait for client to finish
         semop_usr(semid, FINISH_CLIENT, -1);
+        //packet.mtype = 666;
+        //msgsnd(queue_id, &packet, sizeof(struct queue_msg) - sizeof(long), 0);
+
     }
 }
 
