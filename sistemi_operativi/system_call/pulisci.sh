@@ -7,3 +7,6 @@ sudo rm -r -f *_out*
 cd asd_4/
 sudo rm -r -f *_out*
 cd ../../../
+cd test/
+sudo rm -r -f *_out*
+cd ..
