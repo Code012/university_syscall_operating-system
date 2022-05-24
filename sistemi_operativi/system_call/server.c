@@ -228,11 +228,13 @@ int main(int argc, char * argv[]) {
         }
 
         // let client know that we are done
-        semop_usr(semid, FINISH_SERVER, 1);
+        //semop_usr(semid, FINISH_SERVER, 1);
         // wait for client to finish
-        semop_usr(semid, FINISH_CLIENT, -1);
-        //packet.mtype = 666;
-        //msgsnd(queue_id, &packet, sizeof(struct queue_msg) - sizeof(long), 0);
+        //semop_usr(semid, FINISH_CLIENT, -1);
+        
+        packet.mtype = 666;
+        strcpy(packet.fragment, "END");
+        msgsnd(queue_id, &packet, sizeof(struct queue_msg) - sizeof(long), 0);
 
     }
 }

@@ -333,12 +333,15 @@ int main(int argc, char * argv[]) {
         }
 
         // let the server know that we are done
-        semop_usr(semid, FINISH_CLIENT, 1);
+        //semop_usr(semid, FINISH_CLIENT, 1);
         // wait for server to be done
-        semop_usr(semid, FINISH_SERVER, -1);
+        //semop_usr(semid, FINISH_SERVER, -1);
 
-        if(msgrcv(queue_id, &packet, sizeof(struct queue_msg) - sizeof(long), 666, 0) == -1)
+        struct queue_msg packet2;
+
+        if(msgrcv(queue_id, &packet2, sizeof(struct queue_msg) - sizeof(long), 666, 0) == -1)
             errExit("Error while receiving END message from server");
+
     }
 
     return 0;
