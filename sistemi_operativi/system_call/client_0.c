@@ -188,6 +188,11 @@ int main(int argc, char * argv[]) {
             // retrieving file stats
             if (stat(to_send[child_num - 1], &statbuf) == -1)
                 errExit("Could not retrieve file stats");
+            
+            if(statbuf.st_size < 4){
+                printf("Error: a file cannot be empty or smaller than 4 Bytes;\n%s\n\n", to_send[child_num - 1]);
+                exit(-1);
+            }
 
             // splitting files
             switch (statbuf.st_size)
