@@ -21,7 +21,7 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
     struct dirent *file_dir = readdir(dir);
     struct stat statbuf;
 
-    while (file_dir != NULL) {
+    while (file_dir != NULL && count < MAX_FILES) {
         // Check if file_dir refers to a file starting with sendme_
         if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0 && strstr(file_dir->d_name, "_out") == NULL) {
 
@@ -40,14 +40,19 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
 
             // Check file size (4KB -> 4096)
             if (statbuf.st_size <= 4096) {
-                // saving file_path
+
+                // saving file_path and check if dim of path is bigger than 300 chars
+                if(strlen(file_path) > MAX_LENGTH_PATH){
+                    printf("\n----------------------\n\nPath dimension exceeds maximum admitted length\n\n");
+                    exit(-1);
+                }
                 strcpy(to_send[count], file_path);
                 count++;
             }
         }
 
         // check if file_dir refers to a directory
-        if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0) {
+        if (file_dir->d_type == DT_DIR && strcmp(file_dir->d_name, ".") != 0 && strcmp(file_dir->d_name, "..") != 0 ) {
             // creating file_path string
             strcpy(file_path, dir_path);
             strcat(strcat(file_path, "/"), file_dir->d_name);
