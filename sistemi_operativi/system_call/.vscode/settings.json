@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "msg.h": "c",
-        "wait.h": "c"
+        "wait.h": "c",
+        "string.h": "c"
     }
 }

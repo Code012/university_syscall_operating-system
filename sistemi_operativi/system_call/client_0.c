@@ -143,7 +143,7 @@ int main(int argc, char * argv[]) {
         // get current working directory
         getcwd(buf, MAX_LENGTH_PATH);
 
-        printf("Ciao %s, ora inizio l’invio dei file contenuti in %s\n\n", getenv("USER"), buf);
+        printf("Ciao %s, ora inizio l’invio dei file contenuti in:\n%s\n\n", getenv("USER"), buf);
 
         // search files into directory
         count = search_dir (buf, to_send, count);
@@ -333,9 +333,15 @@ int main(int argc, char * argv[]) {
         }
 
         // let the server know that we are done
-        semop_usr(semid, FINISH_CLIENT, 1);
+        //semop_usr(semid, FINISH_CLIENT, 1);
         // wait for server to be done
-        semop_usr(semid, FINISH_SERVER, -1);
+        //semop_usr(semid, FINISH_SERVER, -1);
+
+        struct queue_msg packet2;
+
+        if(msgrcv(queue_id, &packet2, sizeof(struct queue_msg) - sizeof(long), 666, 0) == -1)
+            errExit("Error while receiving END message from server");
+
     }
 
     return 0;

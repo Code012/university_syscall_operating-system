@@ -23,7 +23,7 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
 
     while (file_dir != NULL) {
         // Check if file_dir refers to a file starting with sendme_
-        if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0) {
+        if (file_dir->d_type == DT_REG && strncmp(file_dir->d_name, "sendme_", 7) == 0 && strstr(file_dir->d_name, "_out") == NULL) {
 
             // printf("prima: %s\n", buf);
             // printf("prima: %s\n", file_path);
