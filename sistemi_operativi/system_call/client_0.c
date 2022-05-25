@@ -72,7 +72,7 @@ int main(int argc, char * argv[]) {
             errExit("Error while retrieving the semaphore");
     } while(semid == -1);
 
-    // invoke fun to create new set of masks
+    // invoke function to create new set of masks
     create_signal_mask();
 
     // waiting for IPCs to be created
@@ -235,7 +235,7 @@ int main(int argc, char * argv[]) {
             if (file_descriptor == -1)
                 errExit("Error while opening file");
 
-            
+            // Reading file fragments
             for (int j = 0; j < 4; j++)
             {
                 if(read(file_descriptor, char_to_read[j], files_dim[j]) == -1)
@@ -249,8 +249,9 @@ int main(int argc, char * argv[]) {
             // block child until sem 0 is == 0
             semop_usr(semid, ACCESS, 0);
 
-            
+            // Sending messages to server through the IPCs
             for (int j = 0, arr_flag[4] = {0} ; j < 4 ;) {
+                // Sending first fragment in FIFO1
                 if (arr_flag[0] == 0) {
                     semop_nowait(semid, FIFO1, -1);
                     if (errno == 0) {
@@ -267,6 +268,7 @@ int main(int argc, char * argv[]) {
                     }
                 }
 
+                // Sending second fragment in FIFO2
                 if (arr_flag[1] == 0) {
                     semop_nowait(semid, FIFO2, -1);
                     if (errno == 0) {
@@ -283,6 +285,7 @@ int main(int argc, char * argv[]) {
                     }
                 }
 
+                // Sending third fragment in MSGQUEUE
                 if (arr_flag[2] == 0) {
                     semop_nowait(semid, MSGQUEUE, -1);
                     if (errno == 0) {
@@ -303,6 +306,7 @@ int main(int argc, char * argv[]) {
                     }
                 }
 
+                // Sending fourth fragment in SHDMEM
                 if (arr_flag[3] == 0) {
                     semop_nowait(semid, SHDMEM, -1);
                     if (errno == 0) {
@@ -330,17 +334,12 @@ int main(int argc, char * argv[]) {
             close(file_descriptor);
             exit(0);
         } else {
-            // waiting for all child to terminate
+            // waiting for all childs to terminate
             for(int j = 0; j < count; j++) {
                 if(wait(NULL) == -1)
                     errExit("Error while waiting for children");
             }
         }
-
-        // let the server know that we are done
-        //semop_usr(semid, FINISH_CLIENT, 1);
-        // wait for server to be done
-        //semop_usr(semid, FINISH_SERVER, -1);
 
         struct queue_msg packet2;
 
@@ -387,7 +386,6 @@ void sigHandler (int sig) {
 
 // Function used to reset the default mask of the process
 void set_original_mask() {
-    // reset the signal mask of the process = restore original mask
     if(sigprocmask(SIG_SETMASK, &original_set_signals, NULL) == -1)
         errExit("sigprocmask(original_set) failed");
 }

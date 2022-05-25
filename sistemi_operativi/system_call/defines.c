@@ -75,7 +75,6 @@ int search_dir (char buf[], char to_send[][MAX_LENGTH_PATH], int count) {
 }
 
 // Function to initialize the message struct for commodity
-
 struct queue_msg *init_struct(long mtype, pid_t pid, char *pathname, char *fragment){
     struct queue_msg *message = malloc(sizeof(struct queue_msg));
     check_malloc(message);
@@ -90,8 +89,7 @@ struct queue_msg *init_struct(long mtype, pid_t pid, char *pathname, char *fragm
     return message;
 }
 
-// Function to initialize th output struct for commodity
-
+// Function to initialize the output struct for commodity
 void init_output(struct to_save output[], int n) {
     for (int i = 0 ; i < n ; i++) {
         strcpy(output[i].fragment1, "\0");
@@ -101,7 +99,7 @@ void init_output(struct to_save output[], int n) {
     }
 }
 
-// Check that every fragment is not ""
+// Check that every fragment is not "\0"
 bool check_frags(struct to_save output) {
     if(strcmp(output.fragment1, "\0") == 0)
         return 0;
@@ -125,9 +123,11 @@ char *gen_out_path(char pathname[]) {
 
     strcpy(pathcpy, pathname);
     char extcpy[MAX_LENGTH_PATH];
+    // ext now points at the last occurrence of '.' in pathcpy
     char *ext = strrchr(pathcpy, '.');
 
     if(ext != NULL) {
+        //pathcpy:              extcpy:
         //Gimmy/madoska.txt
         strcpy(extcpy, ext);
         //Gimmy/madoska.txt     .txt

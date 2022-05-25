@@ -17,7 +17,7 @@
 // Declaration of functions
 void sigHandler (int sig);
 
-//init variables
+// init variables
 int semid;
 int queue_id;
 int fifo1_fd;
@@ -38,12 +38,12 @@ int main(int argc, char * argv[]) {
     // set flag to zero (never say never)
     opened = 0;
 
-    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem, FINISH_CLIENT, FINISH_SERVER
-    unsigned short semarray[7] = {0, 0, 1, 1, 0, 1, 1};
+    // sem order: Access, FIFO1, FIFO2, MsgQueue, ShdMem, FINISH_CLIENT
+    unsigned short semarray[6] = {0, 0, 1, 1, 0, 0};
     semarg.array = semarray;
 
     // creation of all the semaphores
-    semid = semget_usr(ftok("client_0", 'a'), 7, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    semid = semget_usr(ftok("client_0", 'a'), 6, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (semctl(semid, 0, SETALL, semarg) == -1)
         errExit("Error while initializing semaphore set");
@@ -58,11 +58,11 @@ int main(int argc, char * argv[]) {
                                     sizeof(struct queue_msg) * IPC_MAX,
                                     IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
-    // set sigHandler as a handler for the SIGINT
+    // set sigHandler as a handler for SIGINT
     if (signal(SIGINT, sigHandler) == SIG_ERR)
         errExit("change signal handler (SIGINT) failed!");
 
-    // opening and attaching all of the IPC
+    // opening and attaching all the IPCs
     fifo1_fd = open_fifo("FIFO1", O_RDONLY | O_NONBLOCK);
     fifo2_fd = open_fifo("FIFO2", O_RDONLY | O_NONBLOCK);
     shmpointer = (struct  queue_msg *) attach_shared_memory(shmem_id, 0);
@@ -73,16 +73,16 @@ int main(int argc, char * argv[]) {
     printf("Server ready!\n");
 
     // wait for client to open IPCs
-    semop_usr(semid, FINISH_CLIENT, -2);
+    semop_usr(semid, FINISH_CLIENT, -1);
 
-    // set flag to one
+    // set flag to one, this tells the server to close all IPCs when receiving SIGINT
     opened = 1;
 
     while(1) {
 
-        // reset all the semaphores to restart the cicle and unlock Access (all IPCs have been created)
-        // Access, FIFO1, FIFO2, MsgQueue, ShdMem, FINISH_CLIENT, FINISH_SERVER
-        // 0,      0,     1,     1,        0,      1,             1
+        // reset all the semaphores to restart the cicle
+        // Access, FIFO1, FIFO2, MsgQueue, ShdMem, FINISH_CLIENT
+        // 0,      0,     1,     1,        0,      0             
         if (semctl(semid, 0, SETALL, semarg) == -1)
             errExit("Error while initializing semaphore set");
 
@@ -99,6 +99,7 @@ int main(int argc, char * argv[]) {
 
         printf("Numero di file da elaborare: %d\n", n_files);
 
+        // Array of structs used to save all files fragments
         struct to_save output[n_files];
 
         init_output(output, n_files);
@@ -156,7 +157,7 @@ int main(int argc, char * argv[]) {
                                                 // saving fragment 4
                         strcpy(output[shmpointer[k].mtype - 1].fragment4, shmpointer[k].fragment);
 
-                        //printf("SHDMEM process PID: %d, Message: %s, Saved message: %s\n", shmpointer[k].pid, shmpointer[k].fragment, output[shmpointer[k].mtype -1].fragment4);
+                        //printf("SHDMEM process PID: %d, Message: %s\n", shmpointer[k].pid, shmpointer[k].fragment);
 
                         shmpointer[k].mtype = 0;
                         read++;
@@ -169,7 +170,7 @@ int main(int argc, char * argv[]) {
             for (int k = 0 ; k < n_files ; k++) {
 
                 if (check_frags(output[k])) {
-                    // Crating path for _out files
+                    // Creating path for _out files
                     char *out_path = gen_out_path(output[k].pathname);
                     char temp_int[30];
                     char to_write[MAX_LENGTH_PATH + 100];
@@ -178,7 +179,7 @@ int main(int argc, char * argv[]) {
                     if(fp == -1)
                         errExit("Errore nella creazione del file");
 
-
+                    // Writing first fragment
                     strcpy(to_write, "[Parte 1, del file ");
                     strcat(to_write, output[k].pathname);
                     strcat(to_write, ", spedita dal processo ");
@@ -187,7 +188,7 @@ int main(int argc, char * argv[]) {
                     strcat(to_write, " tramite FIFO1]\n");
                     write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment1, strlen(output[k].fragment1));
-
+                    // Writing second fragment
                     strcpy(to_write, "\n\n[Parte 2, del file ");
                     strcat(to_write, output[k].pathname);
                     strcat(to_write, ", spedita dal processo ");
@@ -196,7 +197,7 @@ int main(int argc, char * argv[]) {
                     strcat(to_write, " tramite FIFO2]\n");
                     write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment2, strlen(output[k].fragment2));
-
+                    // Writing third fragment
                     strcpy(to_write, "\n\n[Parte 3, del file ");
                     strcat(to_write, output[k].pathname);
                     strcat(to_write, ", spedita dal processo ");
@@ -205,7 +206,7 @@ int main(int argc, char * argv[]) {
                     strcat(to_write, " tramite MsgQueue]\n");
                     write(fp, to_write, strlen(to_write));
                     write(fp, output[k].fragment3, strlen(output[k].fragment3));
-
+                    // Writing fourth fragment
                     strcpy(to_write, "\n\n[Parte 4, del file ");
                     strcat(to_write, output[k].pathname);
                     strcat(to_write, ", spedita dal processo ");
@@ -226,12 +227,8 @@ int main(int argc, char * argv[]) {
             }
 
         }
-
-        // let client know that we are done
-        //semop_usr(semid, FINISH_SERVER, 1);
-        // wait for client to finish
-        //semop_usr(semid, FINISH_CLIENT, -1);
         
+        // Sending message to confirm end of operations
         packet.mtype = 666;
         strcpy(packet.fragment, "END");
         msgsnd(queue_id, &packet, sizeof(struct queue_msg) - sizeof(long), 0);

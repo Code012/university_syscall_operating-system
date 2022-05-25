@@ -29,7 +29,6 @@
 #define MSGQUEUE 3
 #define SHDMEM 4
 #define FINISH_CLIENT 5
-#define FINISH_SERVER 6
 
 // the my_msg structure defines a file fregment sent by a client
 struct queue_msg {
