@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) {
     char char_to_read[4][1025];
     struct queue_msg *packet;
     union semun semarg;
-    unsigned short semarray[7] = {0, IPC_MAX, IPC_MAX, IPC_MAX, 1, 0, 0};
+    unsigned short semarray[6] = {0, IPC_MAX, IPC_MAX, IPC_MAX, 1, 0};
     
 
 
@@ -93,6 +93,7 @@ int main(int argc, char * argv[]) {
     /*****************
      * OBTAINING IDs *
      *****************/
+    
     fifo1_fd = open_fifo("FIFO1", O_WRONLY | O_NONBLOCK);
     fifo2_fd = open_fifo("FIFO2", O_WRONLY | O_NONBLOCK);
     queue_id = msgget(ftok("client_0", 'a'), S_IRUSR | S_IWUSR);
