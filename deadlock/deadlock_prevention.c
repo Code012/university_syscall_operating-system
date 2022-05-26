@@ -69,7 +69,6 @@ static bool_t state_safe(uint32_t *arr_available, uint32_t **mat_alloc,
         {
             // Assume to make available the resources that the task found needs.
             work = arr_add(work, mat_alloc[i], m);
-            //finish[i] = all(finish[i], TRUE, m);
             finish[i] = TRUE;
         }
     }
